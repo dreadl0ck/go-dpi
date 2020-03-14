@@ -1,11 +1,13 @@
+// +build !windows
 package ml
 
 import (
 	"encoding/binary"
-	"github.com/dreadl0ck/go-dpi/types"
-	"github.com/dreadl0ck/go-dpi/utils"
 	"os"
 	"testing"
+
+	"github.com/dreadl0ck/go-dpi/types"
+	"github.com/dreadl0ck/go-dpi/utils"
 )
 
 var tcpModelFile, udpModelFile string

@@ -3,11 +3,12 @@ package wrappers
 // #include "wrappers_config.h"
 // #ifndef DISABLE_LPI
 // #cgo CXXFLAGS: -std=c++11
-// #cgo LDFLAGS: -L/usr/lib -L/usr/local/lib -L${SRCDIR} -lprotoident -ltrace
+// #cgo LDFLAGS: -L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib -L/usr/lib -L/usr/local/lib -L${SRCDIR} -lprotoident -ltrace
 // #endif
 // #include "LPI_wrapper_impl.hpp"
 import "C"
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/dreadl0ck/go-dpi/types"
@@ -68,6 +69,7 @@ func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (types.Protocol, error
 	if proto, found := lpiCodeToProtocol[lpiProto]; found {
 		return proto, nil
 	}
+	fmt.Println("lpiProto", lpiProto, lpiFlow)
 	return types.Unknown, nil
 }
 

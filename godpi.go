@@ -4,11 +4,10 @@ package godpi
 import (
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
-	"github.com/dreadl0ck/go-dpi/modules/ml"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
 	"github.com/dreadl0ck/go-dpi/types"
+	"github.com/dreadl0ck/gopacket"
 )
 
 var activatedModules []types.Module

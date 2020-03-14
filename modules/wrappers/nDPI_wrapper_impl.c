@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
-#include <netinet/in.h>
+#include <Winsock2.h>
 #include <search.h>
 #include <signal.h>
 

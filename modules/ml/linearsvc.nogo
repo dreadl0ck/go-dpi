@@ -1,3 +1,4 @@
+// +build !windows
 // Package ml contains machine learning methods for flow classification.
 package ml
 
@@ -9,12 +10,13 @@ import (
 	"strings"
 	"unsafe"
 
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/dreadl0ck/go-dpi/types"
+	"github.com/google/gopacket/layers"
 	"github.com/pkg/errors"
 )
 
 // #cgo LDFLAGS: -llinear
+// #cgo CFLAGS: -I/usr/local/include -I/usr/local/Cellar/liblinear/2.30/include
 // #include <linear.h>
 // #include "liblinear.h"
 import "C"
