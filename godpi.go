@@ -14,7 +14,6 @@ var activatedModules []types.Module
 var moduleList = []types.Module{
 	classifiers.NewClassifierModule(),
 	wrappers.NewWrapperModule(),
-	ml.NewLinearSVCModule(),
 }
 var cacheExpiration = 5 * time.Minute
 
