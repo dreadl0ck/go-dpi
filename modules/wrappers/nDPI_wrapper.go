@@ -1,8 +1,8 @@
 package wrappers
 
 // #include "wrappers_config.h"
-// #cgo CFLAGS: -I/usr/local/include/
-// #cgo LDFLAGS: -lndpi -lpcap -lm -pthread
+// #cgo CFLAGS: -I/usr/local/include/ -I/opt/homebrew/include/
+// #cgo LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -lndpi -lm -pthread
 // #include "nDPI_wrapper_impl.h"
 import "C"
 import (
@@ -340,7 +340,7 @@ func (wrapper *NDPIWrapper) ClassifyFlow(flow *types.Flow) (class *types.Classif
 		defer (*wrapper.provider).ndpiFreeFlow(ndpiFlow)
 		for _, ppacket := range packets {
 			ndpiProto := (*wrapper.provider).ndpiPacketProcess(ppacket, ndpiFlow)
-			if proto, found := ndpiCodeToProtocol[uint32(ndpiProto)]; found {
+			if proto, found := ndpiCodeToProtocol[uint32(ndpiProto)]; found && proto != types.Unknown {
 				class.Proto = proto
 				return
 			} else if ndpiProto < 0 {

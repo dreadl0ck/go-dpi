@@ -14,7 +14,7 @@
 /**
  * Uncomment the line below to disable compiling with libprotoident.
  */
-// #define DISABLE_LPI
+//#define DISABLE_LPI
 
 /**
  * Error code returned when initializing a disabled library.

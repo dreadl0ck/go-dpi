@@ -26,9 +26,9 @@
 
 
 static struct ndpi_detection_module_struct *ndpi_struct = NULL;
+static struct ndpi_global_context *ndpi_global_ctx = NULL;
 static u_int32_t detection_tick_resolution = 1000;
 
-static u_int32_t size_id_struct = 0;
 static u_int32_t size_flow_struct = 0;
 
 // flow tracking
@@ -45,8 +45,6 @@ typedef struct ndpi_flow {
   u_int16_t packets, bytes;
   // result only, not used for flow identification
   u_int16_t detected_protocol;
-
-  void *src_id, *dst_id;
 } ndpi_flow_t;
 
 extern int ndpiInitialize() {
@@ -57,17 +55,24 @@ extern int ndpiInitialize() {
 
   set_ndpi_malloc(malloc);
   set_ndpi_free(free);
-  ndpi_struct = ndpi_init_detection_module(ndpi_no_prefs);
+  
+  // Initialize global context first
+  ndpi_global_ctx = ndpi_global_init();
+  if (ndpi_global_ctx == NULL) {
+      return -1;
+  }
+  
+  ndpi_struct = ndpi_init_detection_module(ndpi_global_ctx);
 
   if (ndpi_struct == NULL) {
+      ndpi_global_deinit(ndpi_global_ctx);
       return -1;
   }
   // enable all protocols
   NDPI_BITMASK_SET_ALL(all);
   ndpi_set_protocol_detection_bitmask2(ndpi_struct, &all);
 
-  // allocate memory for id and flow tracking
-  size_id_struct = ndpi_detection_get_sizeof_ndpi_id_struct();
+  // allocate memory for flow tracking
   size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
 
   ndpi_finalize_initialization(ndpi_struct);
@@ -77,8 +82,6 @@ extern int ndpiInitialize() {
 
 static void free_ndpi_flow(struct ndpi_flow *flow) {
   if(flow->ndpi_flow) { ndpi_free(flow->ndpi_flow); flow->ndpi_flow = NULL; }
-  if(flow->src_id)    { ndpi_free(flow->src_id); flow->src_id = NULL;       }
-  if(flow->dst_id)    { ndpi_free(flow->dst_id); flow->dst_id = NULL;       }
 }
 
 static void ndpi_flow_freer(void *node) {
@@ -90,6 +93,10 @@ static void ndpi_flow_freer(void *node) {
 extern void ndpiDestroy(void)
 {
   ndpi_exit_detection_module(ndpi_struct);
+  if (ndpi_global_ctx != NULL) {
+    ndpi_global_deinit(ndpi_global_ctx);
+    ndpi_global_ctx = NULL;
+  }
 }
 
 static int node_cmp(const void *a, const void *b) {
@@ -178,8 +185,6 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
   newflow->first_packet_time_usec = header->ts.tv_usec;
 
   newflow->ndpi_flow = calloc(1, size_flow_struct);
-  newflow->src_id = calloc(1, size_id_struct);
-  newflow->dst_id = calloc(1, size_id_struct);
 
   return newflow;
 }
@@ -188,7 +193,6 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
 static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *header,
               const struct ndpi_iphdr *iph, u_int16_t ipsize, u_int16_t rawsize, struct ndpi_flow *flow)
 {
-  struct ndpi_id_struct *src, *dst;
   struct ndpi_flow_struct *ndpi_flow = NULL;
   u_int16_t protocol = 0;
   u_int16_t frag_off = ntohs(iph->frag_off);
@@ -196,7 +200,6 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
   if (flow != NULL) {
     ndpi_flow = flow->ndpi_flow;
     flow->packets++, flow->bytes += rawsize;
-    src = flow->src_id, dst = flow->dst_id;
   } else {
     return -ERR_NO_FLOW;
   }
@@ -206,10 +209,13 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
   // only handle unfragmented packets
   if ((frag_off & 0x3FFF) == 0) {
     // here the actual detection is performed
-    ndpi_protocol detected = ndpi_detection_process_packet(ndpi_struct, ndpi_flow, (uint8_t *) iph, ipsize, time, src, dst);
-    protocol = detected.master_protocol;
+    struct ndpi_flow_input_info input_info;
+    memset(&input_info, 0, sizeof(input_info));
+    
+    ndpi_protocol detected = ndpi_detection_process_packet(ndpi_struct, ndpi_flow, (uint8_t *) iph, ipsize, time, &input_info);
+    protocol = detected.proto.master_protocol;
     if (protocol == 0) {
-        protocol = detected.app_protocol;
+        protocol = detected.proto.app_protocol;
     }
   } else {
     static u_int8_t frag_warning_used = 0;
