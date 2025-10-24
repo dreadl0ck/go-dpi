@@ -71,13 +71,42 @@ func CreateFlowFromPacket(packet gopacket.Packet) (flow *Flow) {
 }
 
 // AddPacket adds a new packet to the flow.
+// When storing a packet, it creates a copy of the packet data to prevent
+// issues with buffer reuse in packet capture scenarios where the underlying
+// data buffer may be reused for subsequent packets.
 func (flow *Flow) AddPacket(packet gopacket.Packet) {
 	flow.mtx.Lock()
+	defer flow.mtx.Unlock()
+	
+	// Only store packets up to MaxPacketsPerFlow
 	if flow.numPackets < MaxPacketsPerFlow {
-		flow.packets = append(flow.packets, packet)
+		// Copy the packet data to prevent buffer reuse issues.
+		// This is critical when processing packets from live capture or
+		// when using gopacket with NoCopy mode, where the underlying buffer
+		// may be reused for subsequent packets.
+		packetData := packet.Data()
+		if len(packetData) > 0 {
+			// Create a copy of the packet data
+			copiedData := make([]byte, len(packetData))
+			copy(copiedData, packetData)
+			
+			// Create a new packet from the copied data
+			// Use the first layer's type as the decode option
+			if len(packet.Layers()) > 0 {
+				copiedPacket := gopacket.NewPacket(copiedData, packet.Layers()[0].LayerType(), gopacket.Default)
+				flow.packets = append(flow.packets, copiedPacket)
+			} else {
+				// Fallback: store the original packet if we can't determine layer type
+				flow.packets = append(flow.packets, packet)
+			}
+		} else {
+			// If packet has no data, store it as-is
+			flow.packets = append(flow.packets, packet)
+		}
 		flow.numPackets++
 	}
-	flow.mtx.Unlock()
+	// If flow is already full (numPackets >= MaxPacketsPerFlow),
+	// we don't store the packet and don't need to copy its data
 }
 
 // AddPacket adds a new packet to the flow.
