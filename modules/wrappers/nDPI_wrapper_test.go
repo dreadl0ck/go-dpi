@@ -8,7 +8,7 @@ import (
 
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/go-dpi/utils"
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 func TestNewNDPIWrapper(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/patrickmn/go-cache"
 )
 

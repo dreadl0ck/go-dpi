@@ -2,8 +2,8 @@
 package utils
 
 import (
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/pcap"
 )
 
 // ReadDumpFile takes the path of a packet capture dump file and returns a

@@ -9,7 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/dreadl0ck/go-dpi/types"
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/pkg/errors"
 )
 

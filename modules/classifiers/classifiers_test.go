@@ -5,8 +5,8 @@ import (
 
 	"strings"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/go-dpi/utils"
 )

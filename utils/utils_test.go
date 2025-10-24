@@ -3,7 +3,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/gopacket/gopacket/layers"
 )
 
 func TestReadDumpFile(t *testing.T) {

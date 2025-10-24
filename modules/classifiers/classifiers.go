@@ -3,7 +3,7 @@
 package classifiers
 
 import (
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/dreadl0ck/go-dpi/types"
 )
 

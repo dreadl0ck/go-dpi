@@ -9,8 +9,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/pcap"
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/go-dpi/utils"

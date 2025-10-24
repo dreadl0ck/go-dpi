@@ -17,7 +17,7 @@ For documentation, please check out the [godoc reference](https://godoc.org/gith
 
 ## Example usage
 
-The library and the modules APIs aim to be very simple and straightforward to use. The library relies on the [gopacket](https://godoc.org/github.com/dreadl0ck/gopacket) library and its Packet structure. Once you have a Packet in your hands, it's very easy to classify it with the library.
+The library and the modules APIs aim to be very simple and straightforward to use. The library relies on the [gopacket](https://godoc.org/github.com/gopacket/gopacket) library and its Packet structure. Once you have a Packet in your hands, it's very easy to classify it with the library.
 First of all you need to initialize the library. You can do that by calling:
 ```go
 godpi.Initialize()
