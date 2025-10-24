@@ -10,8 +10,14 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-var flowTracker *cache.Cache
-var flowTrackerMtx sync.Mutex
+// FlowTracker manages flow tracking with thread-safe access to the cache.
+type FlowTracker struct {
+	Cache *cache.Cache
+	mtx   sync.Mutex
+}
+
+// FlowTrackerInstance is the global flow tracker instance used by the library.
+var FlowTrackerInstance *FlowTracker
 
 // ClassificationSource is the module of the library that is responsible for
 // the classification of a flow.
@@ -32,9 +38,20 @@ func (result ClassificationResult) String() string {
 // NoSource is returned if no classification was made.
 const NoSource = ""
 
+const (
+	// MaxPacketsPerFlow is the maximum number of packets to store per flow.
+	// This aligns with nDPI's behavior of analyzing only the first 10 TCP packets.
+	MaxPacketsPerFlow = 10
+
+	// MinPacketsForClassification is the minimum number of packets required
+	// before attempting to classify a flow.
+	MinPacketsForClassification = 10
+)
+
 // Flow contains sufficient information to classify a flow.
 type Flow struct {
 	packets        []gopacket.Packet
+	numPackets     int
 	classification ClassificationResult
 	mtx            sync.RWMutex
 }
@@ -56,8 +73,9 @@ func CreateFlowFromPacket(packet gopacket.Packet) (flow *Flow) {
 // AddPacket adds a new packet to the flow.
 func (flow *Flow) AddPacket(packet gopacket.Packet) {
 	flow.mtx.Lock()
-	if len(flow.packets) < 10 {
+	if flow.numPackets < MaxPacketsPerFlow {
 		flow.packets = append(flow.packets, packet)
+		flow.numPackets++
 	}
 	flow.mtx.Unlock()
 }
@@ -85,6 +103,14 @@ func (flow *Flow) GetPackets() (packets []gopacket.Packet) {
 	copy(packets, flow.packets)
 	flow.mtx.RUnlock()
 	return
+}
+
+// GetPacketCount returns the number of packets seen for this flow.
+func (flow *Flow) GetPacketCount() int {
+	flow.mtx.RLock()
+	count := flow.numPackets
+	flow.mtx.RUnlock()
+	return count
 }
 
 // SetClassificationResult sets the detected protocol and classification source
@@ -131,18 +157,19 @@ func GetFlowForPacket(packet gopacket.Packet) (flow *Flow, isNew bool) {
 		gpktNetworkFlow := network.NetworkFlow()
 		gpktTransportFlow := transport.TransportFlow()
 		flowStr := endpointStrFromFlows(gpktNetworkFlow, gpktTransportFlow)
-		// make sure two simultaneous calls with the same flow string do not
-		// create a race condition
-		flowTrackerMtx.Lock()
-		trackedFlow, ok := flowTracker.Get(flowStr)
+		// Lock is necessary for the compound check-then-act operation
+		// to prevent race conditions when multiple goroutines process
+		// packets from the same flow simultaneously
+		FlowTrackerInstance.mtx.Lock()
+		trackedFlow, ok := FlowTrackerInstance.Cache.Get(flowStr)
 		if ok {
 			flow = trackedFlow.(*Flow)
 			isNew = false
 		} else {
 			flow = NewFlow()
 		}
-		flowTracker.Set(flowStr, flow, cache.DefaultExpiration)
-		flowTrackerMtx.Unlock()
+		FlowTrackerInstance.Cache.Set(flowStr, flow, cache.DefaultExpiration)
+		FlowTrackerInstance.mtx.Unlock()
 		flow.AddPacket(packet)
 	} else {
 		flow = CreateFlowFromPacket(packet)
@@ -153,20 +180,22 @@ func GetFlowForPacket(packet gopacket.Packet) (flow *Flow, isNew bool) {
 // FlushTrackedFlows flushes the map used for tracking flows. Any new packets
 // that arrive after this operation will be considered new flows.
 func FlushTrackedFlows() {
-	flowTracker.Flush()
+	FlowTrackerInstance.Cache.Flush()
 }
 
 // InitCache initializes the flow cache. It must be called before the cache
 // is utilised. Flows will be discarded if they are inactive for the given
 // duration. If that value is negative, flows will never expire.
 func InitCache(expirationTime time.Duration) {
-	flowTracker = cache.New(expirationTime, 5*time.Minute)
+	FlowTrackerInstance = &FlowTracker{
+		Cache: cache.New(expirationTime, 5*time.Minute),
+	}
 }
 
 // DestroyCache frees the resources used by the flow cache.
 func DestroyCache() {
-	if flowTracker != nil {
-		flowTracker.Flush()
-		flowTracker = nil
+	if FlowTrackerInstance != nil {
+		FlowTrackerInstance.Cache.Flush()
+		FlowTrackerInstance = nil
 	}
 }

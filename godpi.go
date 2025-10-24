@@ -111,6 +111,11 @@ func ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 		return result
 	}
 
+	// Return Unknown immediately for flows with less than minimum packets
+	if flow.GetPacketCount() < types.MinPacketsForClassification {
+		return
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -163,6 +168,11 @@ func ClassifyFlowAllModules(flow *types.Flow) (results []types.ClassificationRes
 	// Return cached result if already classified
 	if result := flow.GetClassificationResult(); result.Protocol != types.Unknown {
 		return []types.ClassificationResult{result}
+	}
+
+	// Return empty results immediately for flows with less than minimum packets
+	if flow.GetPacketCount() < types.MinPacketsForClassification {
+		return
 	}
 
 	var wg sync.WaitGroup
