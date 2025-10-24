@@ -636,6 +636,10 @@ func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification
 	defer C.lpiFreeFlow(lpiFlow)
 	for _, packet := range flow.GetPackets() {
 		pktData := packet.Data()
+		// Skip packets without data to prevent segfault
+		if len(pktData) == 0 {
+			continue
+		}
 		dataPtr := unsafe.Pointer(&pktData[0])
 		C.lpiAddPacketToFlow(lpiFlow, dataPtr, C.ushort(len(pktData)), C.int(flow.GetDirection(packet)))
 	}

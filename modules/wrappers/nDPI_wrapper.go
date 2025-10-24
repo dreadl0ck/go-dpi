@@ -283,6 +283,7 @@ type NDPIWrapper struct {
 
 // getPacketNdpiData is a helper that extracts the PCAP packet header and packet
 // data pointer from a gopacket.Packet, as needed by nDPI.
+// Returns nil pktDataPtr if packet has no data to prevent segfault.
 func getPacketNdpiData(packet gopacket.Packet) (pktHeader C.struct_pcap_pkthdr, pktDataPtr *C.u_char) {
 	seconds := packet.Metadata().Timestamp.Second()
 	capLen := packet.Metadata().CaptureLength
@@ -292,7 +293,14 @@ func getPacketNdpiData(packet gopacket.Packet) (pktHeader C.struct_pcap_pkthdr, 
 	pktHeader.ts.tv_usec = 0
 	pktHeader.caplen = C.bpf_u_int32(capLen)
 	pktHeader.len = C.bpf_u_int32(packetLen)
-	pktDataPtr = (*C.u_char)(unsafe.Pointer(&pktDataSlice[0]))
+
+	// Safety check: prevent segfault when accessing empty slice
+	// Packets without data (e.g., TCP control packets) should not be processed
+	if len(pktDataSlice) > 0 {
+		pktDataPtr = (*C.u_char)(unsafe.Pointer(&pktDataSlice[0]))
+	} else {
+		pktDataPtr = nil
+	}
 	return
 }
 
@@ -304,15 +312,34 @@ func NewNDPIWrapper() *NDPIWrapper {
 			ndpiInitialize: func() int32 { return int32(C.ndpiInitialize()) },
 			ndpiDestroy:    func() { C.ndpiDestroy() },
 			ndpiPacketProcess: func(packet gopacket.Packet, ndpiFlow unsafe.Pointer) int32 {
+				// Safety check: don't process packets without data
+				if len(packet.Data()) == 0 {
+					return 0 // Return "unknown" protocol code
+				}
 				pktHeader, pktDataPtr := getPacketNdpiData(packet)
+				// Double-check pktDataPtr is not nil before calling C code
+				if pktDataPtr == nil {
+					return 0
+				}
 				return int32(C.ndpiPacketProcess(&pktHeader, pktDataPtr, ndpiFlow))
 			},
 			ndpiAllocFlow: func(packet gopacket.Packet) unsafe.Pointer {
+				// Safety check: don't allocate flow for packets without data
+				if len(packet.Data()) == 0 {
+					return nil
+				}
 				pktHeader, pktDataPtr := getPacketNdpiData(packet)
+				// Double-check pktDataPtr is not nil before calling C code
+				if pktDataPtr == nil {
+					return nil
+				}
 				return C.ndpiGetFlow(&pktHeader, pktDataPtr)
 			},
 			ndpiFreeFlow: func(ndpiFlow unsafe.Pointer) {
-				C.ndpiFreeFlow(ndpiFlow)
+				// Safety check: don't free nil pointers
+				if ndpiFlow != nil {
+					C.ndpiFreeFlow(ndpiFlow)
+				}
 			},
 		},
 	}
@@ -336,9 +363,32 @@ func (wrapper *NDPIWrapper) ClassifyFlow(flow *types.Flow) (class *types.Classif
 	class = &types.Classification{}
 	class.Proto = types.Unknown
 	if len(packets) > 0 {
-		ndpiFlow := (*wrapper.provider).ndpiAllocFlow(packets[0])
+		// Find the first packet with data to initialize the flow
+		var firstPacketWithData gopacket.Packet
+		for _, pkt := range packets {
+			if len(pkt.Data()) > 0 {
+				firstPacketWithData = pkt
+				break
+			}
+		}
+
+		// If no packets have data, we can't classify
+		if firstPacketWithData == nil {
+			return
+		}
+
+		ndpiFlow := (*wrapper.provider).ndpiAllocFlow(firstPacketWithData)
+		// Check if flow allocation failed (can happen if packet has no valid data)
+		if ndpiFlow == nil {
+			return
+		}
 		defer (*wrapper.provider).ndpiFreeFlow(ndpiFlow)
 		for _, ppacket := range packets {
+			// Skip packets without data to prevent segfault
+			if len(ppacket.Data()) == 0 {
+				continue
+			}
+
 			ndpiProto := (*wrapper.provider).ndpiPacketProcess(ppacket, ndpiFlow)
 			if proto, found := ndpiCodeToProtocol[uint32(ndpiProto)]; found && proto != types.Unknown {
 				class.Proto = proto
