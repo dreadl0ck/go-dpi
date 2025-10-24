@@ -3,8 +3,11 @@
 package classifiers
 
 import (
-	"github.com/gopacket/gopacket"
+	"context"
+	"sync"
+
 	"github.com/dreadl0ck/go-dpi/types"
+	"github.com/gopacket/gopacket"
 )
 
 // GoDPIName is the name of the library, to be used as an identifier for the
@@ -69,27 +72,92 @@ func (module *ClassifierModule) Destroy() error {
 	return nil
 }
 
-// ClassifyFlow applies all the classifiers to a flow and returns the protocol
+// ClassifyFlow applies all the classifiers to a flow concurrently and returns the protocol
 // that is detected by a classifier if there is one. Otherwise the returned
 // protocol is Unknown.
 func (module *ClassifierModule) ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
+	if len(module.classifierList) == 0 {
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resultChan := make(chan types.ClassificationResult, len(module.classifierList))
+	var wg sync.WaitGroup
+
+	// Launch a goroutine for each classifier
 	for _, classifier := range module.classifierList {
 		if heuristic, ok := classifier.(HeuristicClassifier); ok {
-			if heuristic.HeuristicClassify(flow) {
-				result.Protocol = classifier.GetProtocol()
-				result.Source = GoDPIName
-				flow.SetClassificationResult(result.Protocol, result.Source)
-				break
-			}
+			wg.Add(1)
+			go func(h HeuristicClassifier, c GenericClassifier) {
+				defer wg.Done()
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					if h.HeuristicClassify(flow) {
+						res := types.ClassificationResult{
+							Protocol: c.GetProtocol(),
+							Source:   GoDPIName,
+						}
+						select {
+						case resultChan <- res:
+						case <-ctx.Done():
+						}
+					}
+				}
+			}(heuristic, classifier)
 		}
 	}
+
+	// Close channel when all goroutines complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Wait for first successful result or all classifiers to complete
+	for res := range resultChan {
+		result = res
+		flow.SetClassificationResult(result.Protocol, result.Source)
+		cancel() // Stop other goroutines
+		return
+	}
+
 	return
 }
 
-// ClassifyFlowAll applies all the classifiers to a flow and returns the
+// ClassifyFlowAll applies all the classifiers to a flow concurrently and returns
 // all the protocols detected by any of the classifiers.
 func (module *ClassifierModule) ClassifyFlowAll(flow *types.Flow) (results []types.ClassificationResult) {
-	results = append(results, module.ClassifyFlow(flow))
+	if len(module.classifierList) == 0 {
+		return
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	// Launch a goroutine for each classifier
+	for _, classifier := range module.classifierList {
+		if heuristic, ok := classifier.(HeuristicClassifier); ok {
+			wg.Add(1)
+			go func(h HeuristicClassifier, c GenericClassifier) {
+				defer wg.Done()
+				if h.HeuristicClassify(flow) {
+					res := types.ClassificationResult{
+						Protocol: c.GetProtocol(),
+						Source:   GoDPIName,
+					}
+					mu.Lock()
+					results = append(results, res)
+					mu.Unlock()
+				}
+			}(heuristic, classifier)
+		}
+	}
+
+	wg.Wait()
 	return
 }
 

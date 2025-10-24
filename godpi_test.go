@@ -65,18 +65,27 @@ func TestClassifyFlow(t *testing.T) {
 		t.Error("Initialize not called on all modules once")
 	}
 	result := ClassifyFlow(types.NewFlow())
-	if noClsModule.ClassifyCalled != 1 || clsModule.ClassifyCalled != 1 {
-		t.Error("Classify not called on first two modules")
+	// With concurrent execution, all modules run simultaneously
+	// so we just check that a successful classification was made
+	if result.Protocol != types.HTTP {
+		t.Errorf("Expected HTTP protocol, got protocol %v from source %v", result.Protocol, result.Source)
 	}
-	if clsModule2.ClassifyCalled != 0 {
-		t.Error("Classify called on third module")
-	}
-	if result.Protocol != types.HTTP || result.Source != "module2" {
-		t.Errorf("Expected HTTP from module2, got protocol %v from source %v", result.Protocol, result.Source)
+	if result.Source != "module2" && result.Source != "module3" {
+		t.Errorf("Expected result from module2 or module3, got source %v", result.Source)
 	}
 	results := ClassifyFlowAllModules(types.NewFlow())
-	if results[0] != result {
-		t.Errorf("ClassifyFlowAllModules returned different result: %v", results[0])
+	// With concurrent execution, we should get results from both successful modules,
+	// but order is non-deterministic
+	if len(results) != 2 {
+		t.Errorf("Expected 2 results from ClassifyFlowAllModules, got %d", len(results))
+	}
+	for _, res := range results {
+		if res.Protocol != types.HTTP {
+			t.Errorf("Expected HTTP protocol in results, got %v", res.Protocol)
+		}
+		if res.Source != "module2" && res.Source != "module3" {
+			t.Errorf("Expected result from module2 or module3, got source %v", res.Source)
+		}
 	}
 	Destroy()
 	if noClsModule.DestroyCalled != 1 || clsModule.DestroyCalled != 1 || clsModule2.DestroyCalled != 1 {

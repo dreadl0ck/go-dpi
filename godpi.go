@@ -2,6 +2,8 @@
 package godpi
 
 import (
+	"context"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
@@ -96,31 +98,83 @@ func GetPacketFlow(packet gopacket.Packet) (*types.Flow, bool) {
 }
 
 // ClassifyFlow takes a Flow and tries to classify it with all of the activated
-// modules in order, until one of them manages to classify it. It returns
+// modules concurrently, until one of them manages to classify it. It returns
 // the detected protocol as well as the source that made the classification.
 // If no classification is made, the protocol Unknown is returned.
 func ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
-	for _, module := range activatedModules {
-		resultTmp := module.ClassifyFlow(flow)
-		if resultTmp.Protocol != types.Unknown {
-			result = resultTmp
-			return
-		}
+	if len(activatedModules) == 0 {
+		return
 	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resultChan := make(chan types.ClassificationResult, len(activatedModules))
+	var wg sync.WaitGroup
+
+	// Launch a goroutine for each module
+	for _, module := range activatedModules {
+		wg.Add(1)
+		go func(m types.Module) {
+			defer wg.Done()
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				resultTmp := m.ClassifyFlow(flow)
+				if resultTmp.Protocol != types.Unknown {
+					select {
+					case resultChan <- resultTmp:
+					case <-ctx.Done():
+					}
+				}
+			}
+		}(module)
+	}
+
+	// Close channel when all goroutines complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Wait for first successful result or all modules to complete
+	for res := range resultChan {
+		cancel() // Stop other goroutines
+		return res
+	}
+
 	return
 }
 
 // ClassifyFlowAllModules takes a Flow and tries to classify it with all of the
-// activated modules. However, as opposed to ClassifyFlow, it will return all
+// activated modules concurrently. As opposed to ClassifyFlow, it will return all
 // of the results returned from the modules, not only the first successful one.
 func ClassifyFlowAllModules(flow *types.Flow) (results []types.ClassificationResult) {
-	for _, module := range activatedModules {
-		resultsTmp := module.ClassifyFlowAll(flow)
-		for _, resultTmp := range resultsTmp {
-			if resultTmp.Protocol != types.Unknown {
-				results = append(results, resultTmp)
-			}
-		}
+	if len(activatedModules) == 0 {
+		return
 	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	// Launch a goroutine for each module
+	for _, module := range activatedModules {
+		wg.Add(1)
+		go func(m types.Module) {
+			defer wg.Done()
+			resultsTmp := m.ClassifyFlowAll(flow)
+
+			mu.Lock()
+			for _, resultTmp := range resultsTmp {
+				if resultTmp.Protocol != types.Unknown {
+					results = append(results, resultTmp)
+				}
+			}
+			mu.Unlock()
+		}(module)
+	}
+
+	wg.Wait()
 	return
 }
