@@ -106,6 +106,11 @@ func ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 		return
 	}
 
+	// Return cached result if already classified
+	if result = flow.GetClassificationResult(); result.Protocol != types.Unknown {
+		return result
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -153,6 +158,11 @@ func ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 func ClassifyFlowAllModules(flow *types.Flow) (results []types.ClassificationResult) {
 	if len(activatedModules) == 0 {
 		return
+	}
+
+	// Return cached result if already classified
+	if result := flow.GetClassificationResult(); result.Protocol != types.Unknown {
+		return []types.ClassificationResult{result}
 	}
 
 	var wg sync.WaitGroup

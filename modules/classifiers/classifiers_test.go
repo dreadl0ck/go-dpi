@@ -5,10 +5,10 @@ import (
 
 	"strings"
 
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/dreadl0ck/go-dpi/utils"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 )
 
 func TestClassifyFlow(t *testing.T) {
@@ -94,14 +94,14 @@ func TestCheckFirstPayload(t *testing.T) {
 	noDetections := checkFirstPayload(flow.GetPackets(), layers.LayerTypeTCP,
 		func(payload []byte, packetsRest []gopacket.Packet) bool {
 			called = true
-			if payload == nil || len(payload) == 0 {
+			if len(payload) == 0 {
 				t.Error("No payload passed to callback")
 			}
 			if !strings.HasPrefix(string(payload), "GET /download.html") {
 				t.Error("Wrong first payload passed to callback")
 			}
-			if len(packetsRest) != 39 {
-				t.Error(len(packetsRest))
+			if len(packetsRest) != 6 {
+				t.Errorf("Expected 6 remaining packets, got %d", len(packetsRest))
 			}
 			return false
 		})

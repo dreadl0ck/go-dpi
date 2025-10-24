@@ -56,7 +56,9 @@ func CreateFlowFromPacket(packet gopacket.Packet) (flow *Flow) {
 // AddPacket adds a new packet to the flow.
 func (flow *Flow) AddPacket(packet gopacket.Packet) {
 	flow.mtx.Lock()
-	flow.packets = append(flow.packets, packet)
+	if len(flow.packets) < 10 {
+		flow.packets = append(flow.packets, packet)
+	}
 	flow.mtx.Unlock()
 }
 

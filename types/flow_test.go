@@ -4,9 +4,9 @@ import (
 	"net"
 	"testing"
 
+	"github.com/dreadl0ck/go-dpi/utils"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/dreadl0ck/go-dpi/utils"
 )
 
 func TestNewFlow(t *testing.T) {
@@ -43,7 +43,7 @@ func TestGetFlowForPacket(t *testing.T) {
 	if count := len(flows); count != 3 {
 		t.Fatalf("Wrong number of flows detected: %d instead of 3", count)
 	}
-	packetCounts := [3]int{34, 2, 7}
+	packetCounts := [3]int{10, 2, 7}
 	for flowIdx, expectedCount := range packetCounts {
 		if count := len(flows[flowIdx].GetPackets()); count != expectedCount {
 			t.Errorf("Wrong number of packets in flow: %d instead of %d", count, expectedCount)
