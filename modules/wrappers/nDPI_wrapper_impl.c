@@ -153,9 +153,16 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
     upper_ip = iph->saddr;
   }
 
+  // Bounds check: ensure we have enough data for L4 header
+  u_int16_t ip_header_len = iph->ihl * 4;
+  
   if (iph->protocol == 6 && l4_packet_len >= 20) {
-    // tcp
-    tcph = (struct ndpi_tcphdr *) ((u_int8_t *) iph + iph->ihl * 4);
+    // tcp - need at least 20 bytes for TCP header
+    if (ipsize < ip_header_len + 20) {
+      printf("[NDPI] get_ndpi_flow: not enough data for TCP header\n");
+      return NULL;
+    }
+    tcph = (struct ndpi_tcphdr *) ((u_int8_t *) iph + ip_header_len);
     if (iph->saddr < iph->daddr) {
       lower_port = tcph->source;
       upper_port = tcph->dest;
@@ -164,8 +171,12 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
       upper_port = tcph->source;
     }
   } else if (iph->protocol == 17 && l4_packet_len >= 8) {
-    // udp
-    udph = (struct ndpi_udphdr *) ((u_int8_t *) iph + iph->ihl * 4);
+    // udp - need at least 8 bytes for UDP header
+    if (ipsize < ip_header_len + 8) {
+      printf("[NDPI] get_ndpi_flow: not enough data for UDP header\n");
+      return NULL;
+    }
+    udph = (struct ndpi_udphdr *) ((u_int8_t *) iph + ip_header_len);
     if (iph->saddr < iph->daddr) {
       lower_port = udph->source;
       upper_port = udph->dest;
@@ -223,6 +234,12 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
   }
   if (ndpi_struct == NULL) {
     printf("[NDPI] packet_processing: ndpi_struct not initialized\n");
+    return -ERR_NO_FLOW;
+  }
+  
+  // Validate ipsize - need at least minimum IP header
+  if (ipsize < 20) {
+    printf("[NDPI] packet_processing: ipsize too small (%u bytes)\n", ipsize);
     return -ERR_NO_FLOW;
   }
   
@@ -288,17 +305,27 @@ extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *pac
     printf("[NDPI] ndpiPacketProcess: flow is NULL\n");
     return -ERR_NO_FLOW;
   }
+  
+  // Check packet has minimum size before accessing any fields
+  if (header->caplen < sizeof(struct ndpi_ethhdr)) {
+    printf("[NDPI] ndpiPacketProcess: packet too small (%u bytes)\n", header->caplen);
+    return -ERR_UNSPECIFIED;
+  }
+  if (header->len < sizeof(struct ndpi_ethhdr)) {
+    printf("[NDPI] ndpiPacketProcess: packet length too small (%u bytes)\n", header->len);
+    return -ERR_UNSPECIFIED;
+  }
 
   const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
-  struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
-
+  
   time = ((uint64_t) header->ts.tv_sec) * detection_tick_resolution +
     header->ts.tv_usec / (1000000 / detection_tick_resolution);
 
   type = ethernet->h_proto;
 
   // just work on Ethernet packets that contain IP
-  if (type == htons(ETH_P_IP) && header->caplen >= sizeof(struct ndpi_ethhdr)) {
+  if (type == htons(ETH_P_IP) && header->caplen >= (sizeof(struct ndpi_ethhdr) + 20)) {
+    struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
     u_int16_t frag_off = ntohs(iph->frag_off);
 
     if (iph->version != 4) {
@@ -306,6 +333,12 @@ extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *pac
     }
 
     ip_offset = sizeof(struct ndpi_ethhdr);
+    
+    // Ensure we have valid ipsize after removing ethernet header
+    if (header->len <= ip_offset) {
+      printf("[NDPI] ndpiPacketProcess: invalid packet length after ethernet header\n");
+      return -ERR_UNSPECIFIED;
+    }
 
     // process the packet
     return packet_processing(time, header, iph, header->len - ip_offset, header->len, (struct ndpi_flow*)flow);
@@ -325,15 +358,35 @@ extern void *ndpiGetFlow(const struct pcap_pkthdr *header, const u_char *packet)
     printf("[NDPI] ndpiGetFlow: packet is NULL\n");
     return NULL;
   }
+  
+  // Check packet has minimum size before accessing any fields
+  if (header->caplen < sizeof(struct ndpi_ethhdr)) {
+    return NULL;
+  }
+  if (header->len < sizeof(struct ndpi_ethhdr)) {
+    return NULL;
+  }
 
   const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
-  struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
-
   type = ethernet->h_proto;
 
   // just work on Ethernet packets that contain IP
-  if (type == htons(ETH_P_IP) && header->caplen >= sizeof(struct ndpi_ethhdr) && iph->version == 4) {
+  // Need at least ethernet header + minimum IP header (20 bytes)
+  if (type == htons(ETH_P_IP) && header->caplen >= (sizeof(struct ndpi_ethhdr) + 20) && header->len >= (sizeof(struct ndpi_ethhdr) + 20)) {
+    struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
+    
+    if (iph->version != 4) {
+      return NULL;
+    }
+    
     ip_offset = sizeof(struct ndpi_ethhdr);
+    
+    // Ensure we have valid ipsize after removing ethernet header
+    if (header->len <= ip_offset) {
+      printf("[NDPI] ndpiGetFlow: invalid packet length after ethernet header\n");
+      return NULL;
+    }
+    
     return get_ndpi_flow(header, iph, header->len - ip_offset);
   }
   return NULL;
