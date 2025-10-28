@@ -20,8 +20,12 @@ func TestNewNDPIWrapper(t *testing.T) {
 func TestNDPIWrapperClassification(t *testing.T) {
 	flow := types.NewFlow()
 	packetChan, _ := utils.ReadDumpFile("../../godpi_example/dumps/http.cap")
-	for i := 0; i < 4; i++ {
+	// Add enough packets for proper classification
+	for i := 0; i < 10; i++ {
 		packet := <-packetChan
+		if packet == nil {
+			break
+		}
 		flow.AddPacket(packet)
 	}
 
@@ -34,7 +38,7 @@ func TestNDPIWrapperClassification(t *testing.T) {
 			t.Errorf("Incorrectly detected flow protocol: %v instead of HTTP, error: %v", result, err)
 		}
 	case errorLibraryDisabled:
-		// do nothing if library is disabled
+		t.Skip("nDPI library is disabled")
 	default:
 		t.Error("nDPI initialization returned error code:", errCode)
 	}
@@ -80,6 +84,9 @@ func TestNDPIWrapper_ClassifyFlowErrors(t *testing.T) {
 	var retVal int32
 	timesCalled := 0
 
+	// Create a dummy pointer for the flow allocation
+	dummyPtr := unsafe.Pointer(new(int))
+
 	wrapper := &NDPIWrapper{
 		provider: &NDPIWrapperProvider{
 			ndpiPacketProcess: func(_ gopacket.Packet, _ unsafe.Pointer) int32 {
@@ -87,7 +94,7 @@ func TestNDPIWrapper_ClassifyFlowErrors(t *testing.T) {
 				return retVal
 			},
 			ndpiAllocFlow: func(gopacket.Packet) unsafe.Pointer {
-				return nil
+				return dummyPtr
 			},
 			ndpiFreeFlow: func(unsafe.Pointer) {
 			},
@@ -115,6 +122,10 @@ func TestNDPIWrapper_ClassifyFlowErrors(t *testing.T) {
 	for value, errStr := range returnValueErrors {
 		retVal = value
 		_, err := wrapper.ClassifyFlow(flow)
+		if err == nil {
+			t.Errorf("Expected error for return value %d, but got nil", value)
+			continue
+		}
 		if !strings.Contains(err.Error(), errStr) {
 			t.Errorf("Incorrect error thrown for return value %d: %v", value, err.Error())
 		}

@@ -16,6 +16,12 @@ struct lpiResult {
 	u_int32_t category;
 };
 
+struct lpiProtocolInfo {
+	u_int32_t proto;
+	u_int32_t category;
+	char name[256];
+};
+
 extern "C"
 int lpiInitLibrary() {
     // Initialize the library
@@ -63,6 +69,43 @@ extern "C"
 void lpiDestroyLibrary() {
     // Free the library
     lpi_free_library();
+}
+
+extern "C"
+int lpiGetProtocolCount() {
+    // libprotoident protocols are an enum from 0 to ~540
+    // We return a safe upper bound
+    return 600;
+}
+
+extern "C"
+lpiProtocolInfo *lpiGetProtocolInfo(int index) {
+    // Cast index to protocol enum type
+    lpi_protocol_t proto = static_cast<lpi_protocol_t>(index);
+    
+    // Use lpi_print to get the protocol name
+    const char *name = lpi_print(proto);
+    if (name == NULL || strcmp(name, "Unknown") == 0) {
+        // Skip unknown protocols
+        return NULL;
+    }
+    
+    lpiProtocolInfo *info = new lpiProtocolInfo;
+    info->proto = static_cast<uint32_t>(proto);
+    
+    // Get the category for this protocol
+    info->category = static_cast<uint32_t>(lpi_get_category_by_protocol(proto));
+    
+    // Copy the protocol name
+    strncpy(info->name, name, 255);
+    info->name[255] = '\0';
+    
+    return info;
+}
+
+extern "C"
+void lpiFreeProtocolInfo(lpiProtocolInfo *info) {
+    delete info;
 }
 
 #else

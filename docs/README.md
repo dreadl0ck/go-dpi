@@ -81,6 +81,44 @@ func main() {
 }
 ```
 
+## Querying Supported Protocols and Categories
+
+Each classification module provides methods to query which protocols and categories it supports:
+
+### LPI (libprotoident)
+
+```go
+lpiWrapper := wrappers.NewLPIWrapper()
+
+// Get all supported categories
+categories := lpiWrapper.GetSupportedCategories()
+
+// Get all supported protocols
+protocols := lpiWrapper.GetSupportedProtocols()
+```
+
+### nDPI
+
+nDPI 4.14 support with 447 protocols.
+
+```go
+ndpiWrapper := wrappers.NewNDPIWrapper()
+
+// Get all supported protocols
+protocols := ndpiWrapper.GetSupportedProtocols()
+```
+
+### Go Classifiers
+
+```go
+classifierModule := classifiers.NewClassifierModule()
+
+// Get all supported protocols
+protocols := classifierModule.GetSupportedProtocols()
+```
+
+For a complete example, see `godpi_example/supported_protocols/main.go`.
+
 ## License
 
 go-dpi is available under the MIT license and distributed in source code format.

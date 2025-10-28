@@ -64,7 +64,24 @@ func TestClassifyFlow(t *testing.T) {
 	if noClsModule.InitCalled != 1 || clsModule.InitCalled != 1 || clsModule2.InitCalled != 1 {
 		t.Error("Initialize not called on all modules once")
 	}
-	result := ClassifyFlow(types.NewFlow())
+
+	// Create a flow with enough packets to pass MinPacketsForClassification
+	testFlow := types.NewFlow()
+	// Read packets from test file to create a realistic flow
+	dumpPackets, err := utils.ReadDumpFile("./godpi_example/dumps/http.cap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Add at least MinPacketsForClassification packets
+	for i := 0; i < 10; i++ {
+		packet := <-dumpPackets
+		if packet == nil {
+			break
+		}
+		testFlow.AddPacket(packet)
+	}
+
+	result := ClassifyFlow(testFlow)
 	// With concurrent execution, all modules run simultaneously
 	// so we just check that a successful classification was made
 	if result.Protocol != types.HTTP {
@@ -73,7 +90,22 @@ func TestClassifyFlow(t *testing.T) {
 	if result.Source != "module2" && result.Source != "module3" {
 		t.Errorf("Expected result from module2 or module3, got source %v", result.Source)
 	}
-	results := ClassifyFlowAllModules(types.NewFlow())
+
+	// Create another flow with enough packets for ClassifyFlowAllModules
+	testFlow2 := types.NewFlow()
+	dumpPackets2, err := utils.ReadDumpFile("./godpi_example/dumps/http.cap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 10; i++ {
+		packet := <-dumpPackets2
+		if packet == nil {
+			break
+		}
+		testFlow2.AddPacket(packet)
+	}
+
+	results := ClassifyFlowAllModules(testFlow2)
 	// With concurrent execution, we should get results from both successful modules,
 	// but order is non-deterministic
 	if len(results) != 2 {

@@ -168,6 +168,17 @@ func (module *ClassifierModule) ConfigureModule(config ClassifierModuleConfig) {
 	module.classifierList = config.Classifiers
 }
 
+// GetSupportedProtocols returns all protocols supported by the go-dpi classifiers.
+func (module *ClassifierModule) GetSupportedProtocols() []types.Protocol {
+	protocols := make([]types.Protocol, 0, len(module.classifierList))
+
+	for _, classifier := range module.classifierList {
+		protocols = append(protocols, classifier.GetProtocol())
+	}
+
+	return protocols
+}
+
 // checkFlowLayer applies the check function to the specified layer of each
 // packet in a flow, where it is available. It returns whether there is a
 // packet in the flow for which the check function returns true.

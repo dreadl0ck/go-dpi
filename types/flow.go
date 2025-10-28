@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -45,7 +46,7 @@ const (
 
 	// MinPacketsForClassification is the minimum number of packets required
 	// before attempting to classify a flow.
-	MinPacketsForClassification = 10
+	MinPacketsForClassification = 4
 )
 
 // Flow contains sufficient information to classify a flow.
@@ -77,7 +78,7 @@ func CreateFlowFromPacket(packet gopacket.Packet) (flow *Flow) {
 func (flow *Flow) AddPacket(packet gopacket.Packet) {
 	flow.mtx.Lock()
 	defer flow.mtx.Unlock()
-	
+
 	// Only store packets up to MaxPacketsPerFlow
 	if flow.numPackets < MaxPacketsPerFlow {
 		// Copy the packet data to prevent buffer reuse issues.
@@ -89,16 +90,50 @@ func (flow *Flow) AddPacket(packet gopacket.Packet) {
 			// Create a copy of the packet data
 			copiedData := make([]byte, len(packetData))
 			copy(copiedData, packetData)
-			
+
 			// Create a new packet from the copied data
 			// Use the first layer's type as the decode option
+			var copiedPacket gopacket.Packet
 			if len(packet.Layers()) > 0 {
-				copiedPacket := gopacket.NewPacket(copiedData, packet.Layers()[0].LayerType(), gopacket.Default)
-				flow.packets = append(flow.packets, copiedPacket)
+				copiedPacket = gopacket.NewPacket(copiedData, packet.Layers()[0].LayerType(), gopacket.Default)
+
+				// Verify that the recreated packet has the same layer structure
+				// If not, fall back to storing the original packet to avoid breaking
+				// flow tracking that relies on network and transport layers
+				if copiedPacket.NetworkLayer() == nil && packet.NetworkLayer() != nil {
+					// Decoding failed to preserve network layer, store original
+					flow.packets = append(flow.packets, packet)
+					flow.numPackets++
+					return
+				}
+
+				// Manually copy metadata from original packet to preserve all information
+				// needed by classification libraries (timestamps, lengths, etc.)
+				copiedPacket.Metadata().Timestamp = packet.Metadata().Timestamp
+				copiedPacket.Metadata().CaptureLength = packet.Metadata().CaptureLength
+				copiedPacket.Metadata().Length = packet.Metadata().Length
+				copiedPacket.Metadata().InterfaceIndex = packet.Metadata().InterfaceIndex
+				copiedPacket.Metadata().Truncated = packet.Metadata().Truncated
+				copiedPacket.Metadata().AncillaryData = packet.Metadata().AncillaryData
 			} else {
-				// Fallback: store the original packet if we can't determine layer type
-				flow.packets = append(flow.packets, packet)
+				// If packet has no layers, try decoding from Ethernet
+				copiedPacket = gopacket.NewPacket(copiedData, layers.LayerTypeEthernet, gopacket.Default)
+				if copiedPacket.NetworkLayer() == nil {
+					// Decoding failed, store original packet
+					flow.packets = append(flow.packets, packet)
+					flow.numPackets++
+					return
+				}
+				// Copy metadata
+				copiedPacket.Metadata().Timestamp = packet.Metadata().Timestamp
+				copiedPacket.Metadata().CaptureLength = packet.Metadata().CaptureLength
+				copiedPacket.Metadata().Length = packet.Metadata().Length
+				copiedPacket.Metadata().InterfaceIndex = packet.Metadata().InterfaceIndex
+				copiedPacket.Metadata().Truncated = packet.Metadata().Truncated
+				copiedPacket.Metadata().AncillaryData = packet.Metadata().AncillaryData
 			}
+
+			flow.packets = append(flow.packets, copiedPacket)
 		} else {
 			// If packet has no data, store it as-is
 			flow.packets = append(flow.packets, packet)

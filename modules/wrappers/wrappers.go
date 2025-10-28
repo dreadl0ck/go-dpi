@@ -3,9 +3,10 @@
 package wrappers
 
 import (
+	"strconv"
+
 	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 // WrapperModule is the module that contains wrappers for other protocol
@@ -102,6 +103,8 @@ func (module *WrapperModule) ClassifyFlow(flow *types.Flow) (result types.Classi
 
 // ClassifyFlowAll applies all the wrappers to a flow and returns the protocols
 // that are detected by each one in an array.
+// Note: This method does NOT cache results on the flow, as it's meant to return
+// all detections from all wrappers. Caching is only done by ClassifyFlow.
 func (module *WrapperModule) ClassifyFlowAll(flow *types.Flow) (results []types.ClassificationResult) {
 	for _, wrapper := range module.activeWrappers {
 		if c, err := wrapper.ClassifyFlow(flow); err == nil {
@@ -109,7 +112,8 @@ func (module *WrapperModule) ClassifyFlowAll(flow *types.Flow) (results []types.
 			result.Protocol = c.Proto
 			result.Class = c.Class
 			result.Source = wrapper.GetWrapperName()
-			flow.SetClassificationResult(result.Protocol, result.Source)
+			// Don't cache results in ClassifyFlowAll - we want to get fresh results
+			// from all wrappers each time
 			results = append(results, result)
 		}
 	}

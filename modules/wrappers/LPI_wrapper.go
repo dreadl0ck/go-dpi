@@ -679,3 +679,74 @@ func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification
 func (wrapper *LPIWrapper) GetWrapperName() types.ClassificationSource {
 	return LPIWrapperName
 }
+
+// GetSupportedCategories returns all categories supported by libprotoident.
+func (wrapper *LPIWrapper) GetSupportedCategories() []types.Category {
+	categories := make([]types.Category, 0, len(lpiCodeToCategory))
+	seen := make(map[types.Category]bool)
+
+	for _, category := range lpiCodeToCategory {
+		if !seen[category] {
+			categories = append(categories, category)
+			seen[category] = true
+		}
+	}
+
+	return categories
+}
+
+// GetSupportedProtocols returns all protocols supported by libprotoident.
+func (wrapper *LPIWrapper) GetSupportedProtocols() []types.Protocol {
+	protocols := make([]types.Protocol, 0, len(lpiCodeToProtocol))
+	seen := make(map[types.Protocol]bool)
+
+	for _, protocol := range lpiCodeToProtocol {
+		if !seen[protocol] {
+			protocols = append(protocols, protocol)
+			seen[protocol] = true
+		}
+	}
+
+	return protocols
+}
+
+// ProtocolInfo represents information about a libprotoident protocol
+type ProtocolInfo struct {
+	Code     uint32
+	Name     string
+	Category uint32
+}
+
+// GetLibraryProtocolCount returns the number of protocols supported by the installed libprotoident
+func (wrapper *LPIWrapper) GetLibraryProtocolCount() int {
+	return int(C.lpiGetProtocolCount())
+}
+
+// GetLibraryProtocolInfo retrieves information about a specific protocol from the libprotoident library
+func (wrapper *LPIWrapper) GetLibraryProtocolInfo(index int) *ProtocolInfo {
+	info := C.lpiGetProtocolInfo(C.int(index))
+	if info == nil {
+		return nil
+	}
+	defer C.lpiFreeProtocolInfo(info)
+
+	return &ProtocolInfo{
+		Code:     uint32(info.proto),
+		Name:     C.GoString(&info.name[0]),
+		Category: uint32(info.category),
+	}
+}
+
+// GetAllLibraryProtocols returns all protocols supported by the installed libprotoident
+func (wrapper *LPIWrapper) GetAllLibraryProtocols() []ProtocolInfo {
+	count := wrapper.GetLibraryProtocolCount()
+	protocols := make([]ProtocolInfo, 0, count)
+
+	for i := 0; i < count; i++ {
+		if info := wrapper.GetLibraryProtocolInfo(i); info != nil {
+			protocols = append(protocols, *info)
+		}
+	}
+
+	return protocols
+}
