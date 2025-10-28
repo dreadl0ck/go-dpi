@@ -84,9 +84,6 @@ func TestNDPIWrapper_ClassifyFlowErrors(t *testing.T) {
 	var retVal int32
 	timesCalled := 0
 
-	// Create a dummy pointer for the flow allocation
-	dummyPtr := unsafe.Pointer(new(int))
-
 	wrapper := &NDPIWrapper{
 		provider: &NDPIWrapperProvider{
 			ndpiPacketProcess: func(_ gopacket.Packet, _ unsafe.Pointer) int32 {
@@ -94,7 +91,7 @@ func TestNDPIWrapper_ClassifyFlowErrors(t *testing.T) {
 				return retVal
 			},
 			ndpiAllocFlow: func(gopacket.Packet) unsafe.Pointer {
-				return dummyPtr
+				return nil
 			},
 			ndpiFreeFlow: func(unsafe.Pointer) {
 			},
