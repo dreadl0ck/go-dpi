@@ -495,8 +495,7 @@ func getPacketNdpiData(packet gopacket.Packet) (pktHeader C.struct_pcap_pkthdr, 
 	capLen := packet.Metadata().CaptureLength
 	packetLen := packet.Metadata().Length
 	pktDataSlice := packet.Data()
-	pktHeader.ts.tv_sec = C.long(timestamp.Unix())
-	pktHeader.ts.tv_usec = C.__darwin_suseconds_t(timestamp.Nanosecond() / 1000)
+	setTimeval(&pktHeader.ts, timestamp)
 	pktHeader.caplen = C.bpf_u_int32(capLen)
 	pktHeader.len = C.bpf_u_int32(packetLen)
 
