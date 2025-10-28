@@ -632,8 +632,16 @@ func (wrapper *LPIWrapper) DestroyWrapper() error {
 // ClassifyFlow classifies a flow using the libprotoident library. It returns
 // the detected protocol and any error.
 func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification, error) {
+	if flow == nil {
+		return &types.Classification{Proto: types.Unknown}, nil
+	}
+
 	lpiFlow := C.lpiCreateFlow()
+	if lpiFlow == nil {
+		return &types.Classification{Proto: types.Unknown}, nil
+	}
 	defer C.lpiFreeFlow(lpiFlow)
+
 	for _, packet := range flow.GetPackets() {
 		pktData := packet.Data()
 		// Skip packets without data to prevent segfault
@@ -643,7 +651,12 @@ func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification
 		dataPtr := unsafe.Pointer(&pktData[0])
 		C.lpiAddPacketToFlow(lpiFlow, dataPtr, C.ushort(len(pktData)), C.int(flow.GetDirection(packet)))
 	}
-	lpiResult := (*C.struct_lpiResult)(unsafe.Pointer(C.lpiGuessProtocol(lpiFlow)))
+
+	lpiResultPtr := C.lpiGuessProtocol(lpiFlow)
+	if lpiResultPtr == nil {
+		return &types.Classification{Proto: types.Unknown}, nil
+	}
+	lpiResult := (*C.struct_lpiResult)(unsafe.Pointer(lpiResultPtr))
 	defer C.free(unsafe.Pointer(lpiResult))
 
 	protoCode := uint32(lpiResult.proto)

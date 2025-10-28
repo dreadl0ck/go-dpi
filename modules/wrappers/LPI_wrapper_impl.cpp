@@ -5,6 +5,8 @@
 #ifndef DISABLE_LPI
 
 #include <iostream>
+#include <new>
+#include <cstring>
 #include <libprotoident.h>
 #include <libprotoident.h>
 #include <libtrace.h>
@@ -31,7 +33,11 @@ int lpiInitLibrary() {
 extern "C"
 lpi_data_t *lpiCreateFlow() {
     // Create a new flow
-    lpi_data_t *data = new lpi_data_t;
+    lpi_data_t *data = new (std::nothrow) lpi_data_t;
+    if (data == nullptr) {
+        cerr << "[LPI] lpiCreateFlow: memory allocation failed" << endl;
+        return nullptr;
+    }
     lpi_init_data(data);
     return data;
 }
@@ -39,14 +45,33 @@ lpi_data_t *lpiCreateFlow() {
 extern "C"
 void lpiFreeFlow(lpi_data_t *data) {
     // Free a flow
-    delete data;
+    if (data != nullptr) {
+        delete data;
+    }
 }
 
 extern "C"
 int lpiAddPacketToFlow(lpi_data_t *data, const void *pktData, unsigned short pktLen, int dir) {
     // Add the data of a packet to a flow
+    if (data == nullptr) {
+        cerr << "[LPI] lpiAddPacketToFlow: data is NULL" << endl;
+        return -1;
+    }
+    if (pktData == nullptr) {
+        cerr << "[LPI] lpiAddPacketToFlow: pktData is NULL" << endl;
+        return -1;
+    }
+    if (pktLen == 0) {
+        cerr << "[LPI] lpiAddPacketToFlow: pktLen is 0" << endl;
+        return -1;
+    }
+    
     int retVal;
     auto packet = trace_create_packet();
+    if (packet == nullptr) {
+        cerr << "[LPI] lpiAddPacketToFlow: trace_create_packet failed" << endl;
+        return -1;
+    }
 
     trace_construct_packet(packet, TRACE_TYPE_ETH, pktData, pktLen);
     retVal = lpi_update_data(packet, data, dir);
@@ -58,8 +83,24 @@ int lpiAddPacketToFlow(lpi_data_t *data, const void *pktData, unsigned short pkt
 extern "C"
 lpiResult *lpiGuessProtocol(lpi_data_t *data) {
     // Try to classify a flow
-    struct lpiResult* res = new lpiResult;
+    if (data == nullptr) {
+        cerr << "[LPI] lpiGuessProtocol: data is NULL" << endl;
+        return nullptr;
+    }
+    
+    struct lpiResult* res = new (std::nothrow) lpiResult;
+    if (res == nullptr) {
+        cerr << "[LPI] lpiGuessProtocol: memory allocation failed" << endl;
+        return nullptr;
+    }
+    
     lpi_module_t *mod = lpi_guess_protocol(data);
+    if (mod == nullptr) {
+        cerr << "[LPI] lpiGuessProtocol: lpi_guess_protocol returned NULL" << endl;
+        delete res;
+        return nullptr;
+    }
+    
     res->proto = mod->protocol;
     res->category = mod->category;
     return res;
@@ -90,7 +131,12 @@ lpiProtocolInfo *lpiGetProtocolInfo(int index) {
         return NULL;
     }
     
-    lpiProtocolInfo *info = new lpiProtocolInfo;
+    lpiProtocolInfo *info = new (std::nothrow) lpiProtocolInfo;
+    if (info == nullptr) {
+        cerr << "[LPI] lpiGetProtocolInfo: memory allocation failed" << endl;
+        return nullptr;
+    }
+    
     info->proto = static_cast<uint32_t>(proto);
     
     // Get the category for this protocol
@@ -105,7 +151,9 @@ lpiProtocolInfo *lpiGetProtocolInfo(int index) {
 
 extern "C"
 void lpiFreeProtocolInfo(lpiProtocolInfo *info) {
-    delete info;
+    if (info != nullptr) {
+        delete info;
+    }
 }
 
 #else

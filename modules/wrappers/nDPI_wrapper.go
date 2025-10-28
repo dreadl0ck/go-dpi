@@ -517,8 +517,8 @@ func NewNDPIWrapper() *NDPIWrapper {
 			ndpiInitialize: func() int32 { return int32(C.ndpiInitialize()) },
 			ndpiDestroy:    func() { C.ndpiDestroy() },
 			ndpiPacketProcess: func(packet gopacket.Packet, ndpiFlow unsafe.Pointer) int32 {
-				// Safety check: don't process packets without data
-				if len(packet.Data()) == 0 {
+				// Safety check: don't process packets without data or flow
+				if len(packet.Data()) == 0 || ndpiFlow == nil {
 					return 0 // Return "unknown" protocol code
 				}
 				pktHeader, pktDataPtr := getPacketNdpiData(packet)

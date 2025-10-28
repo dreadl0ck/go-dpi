@@ -127,6 +127,15 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
   void *ret;
   struct ndpi_flow *newflow;
 
+  // Safety checks for NULL parameters
+  if (header == NULL) {
+    printf("[NDPI] get_ndpi_flow: header is NULL\n");
+    return NULL;
+  }
+  if (iph == NULL) {
+    printf("[NDPI] get_ndpi_flow: iph is NULL\n");
+    return NULL;
+  }
   if (ipsize < 20)
     return NULL;
 
@@ -185,6 +194,12 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
   newflow->first_packet_time_usec = header->ts.tv_usec;
 
   newflow->ndpi_flow = calloc(1, size_flow_struct);
+  
+  if(newflow->ndpi_flow == NULL) {
+    printf("[NDPI] %s(2): not enough memory for ndpi_flow\n", __FUNCTION__);
+    free(newflow);
+    return NULL;
+  }
 
   return newflow;
 }
@@ -195,10 +210,29 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
 {
   struct ndpi_flow_struct *ndpi_flow = NULL;
   u_int16_t protocol = 0;
-  u_int16_t frag_off = ntohs(iph->frag_off);
+  u_int16_t frag_off;
+  
+  // Safety checks for NULL parameters
+  if (header == NULL) {
+    printf("[NDPI] packet_processing: header is NULL\n");
+    return -ERR_NO_FLOW;
+  }
+  if (iph == NULL) {
+    printf("[NDPI] packet_processing: iph is NULL\n");
+    return -ERR_NO_FLOW;
+  }
+  if (ndpi_struct == NULL) {
+    printf("[NDPI] packet_processing: ndpi_struct not initialized\n");
+    return -ERR_NO_FLOW;
+  }
+  
+  frag_off = ntohs(iph->frag_off);
 
   if (flow != NULL) {
     ndpi_flow = flow->ndpi_flow;
+    if (ndpi_flow == NULL) {
+      return -ERR_NO_FLOW;
+    }
     flow->packets++, flow->bytes += rawsize;
   } else {
     return -ERR_NO_FLOW;
@@ -238,11 +272,25 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
 // process a new packet
 extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *packet, void *flow)
 {
-  const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
-  struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
   u_int64_t time;
   u_int16_t type, ip_offset;
+  
+  // Safety checks for NULL parameters
+  if (header == NULL) {
+    printf("[NDPI] ndpiPacketProcess: header is NULL\n");
+    return -ERR_UNSPECIFIED;
+  }
+  if (packet == NULL) {
+    printf("[NDPI] ndpiPacketProcess: packet is NULL\n");
+    return -ERR_UNSPECIFIED;
+  }
+  if (flow == NULL) {
+    printf("[NDPI] ndpiPacketProcess: flow is NULL\n");
+    return -ERR_NO_FLOW;
+  }
 
+  const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
+  struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
 
   time = ((uint64_t) header->ts.tv_sec) * detection_tick_resolution +
     header->ts.tv_usec / (1000000 / detection_tick_resolution);
@@ -266,9 +314,20 @@ extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *pac
 }
 
 extern void *ndpiGetFlow(const struct pcap_pkthdr *header, const u_char *packet) {
+  u_int16_t type, ip_offset;
+  
+  // Safety checks for NULL parameters
+  if (header == NULL) {
+    printf("[NDPI] ndpiGetFlow: header is NULL\n");
+    return NULL;
+  }
+  if (packet == NULL) {
+    printf("[NDPI] ndpiGetFlow: packet is NULL\n");
+    return NULL;
+  }
+
   const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
   struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
-  u_int16_t type, ip_offset;
 
   type = ethernet->h_proto;
 
@@ -281,7 +340,11 @@ extern void *ndpiGetFlow(const struct pcap_pkthdr *header, const u_char *packet)
 }
 
 extern void ndpiFreeFlow(void *flow) {
-    free(flow);
+    if(flow != NULL) {
+        struct ndpi_flow *ndpi_flow = (struct ndpi_flow*)flow;
+        free_ndpi_flow(ndpi_flow);
+        free(flow);
+    }
 }
 
 #else
