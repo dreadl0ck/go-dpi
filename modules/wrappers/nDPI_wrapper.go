@@ -415,3 +415,18 @@ func (wrapper *NDPIWrapper) ClassifyFlow(flow *types.Flow) (class *types.Classif
 func (wrapper *NDPIWrapper) GetWrapperName() types.ClassificationSource {
 	return NDPIWrapperName
 }
+
+// GetSupportedProtocols returns all protocols supported by nDPI.
+func (wrapper *NDPIWrapper) GetSupportedProtocols() []types.Protocol {
+	protocols := make([]types.Protocol, 0, len(ndpiCodeToProtocol))
+	seen := make(map[types.Protocol]bool)
+
+	for _, protocol := range ndpiCodeToProtocol {
+		if !seen[protocol] {
+			protocols = append(protocols, protocol)
+			seen[protocol] = true
+		}
+	}
+
+	return protocols
+}
