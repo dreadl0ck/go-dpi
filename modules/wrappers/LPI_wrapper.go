@@ -679,3 +679,33 @@ func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification
 func (wrapper *LPIWrapper) GetWrapperName() types.ClassificationSource {
 	return LPIWrapperName
 }
+
+// GetSupportedCategories returns all categories supported by libprotoident.
+func (wrapper *LPIWrapper) GetSupportedCategories() []types.Category {
+	categories := make([]types.Category, 0, len(lpiCodeToCategory))
+	seen := make(map[types.Category]bool)
+
+	for _, category := range lpiCodeToCategory {
+		if !seen[category] {
+			categories = append(categories, category)
+			seen[category] = true
+		}
+	}
+
+	return categories
+}
+
+// GetSupportedProtocols returns all protocols supported by libprotoident.
+func (wrapper *LPIWrapper) GetSupportedProtocols() []types.Protocol {
+	protocols := make([]types.Protocol, 0, len(lpiCodeToProtocol))
+	seen := make(map[types.Protocol]bool)
+
+	for _, protocol := range lpiCodeToProtocol {
+		if !seen[protocol] {
+			protocols = append(protocols, protocol)
+			seen[protocol] = true
+		}
+	}
+
+	return protocols
+}
