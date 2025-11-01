@@ -84,9 +84,16 @@ func (flow *Flow) AddPacket(packet gopacket.Packet) {
 }
 
 // GetDirection returns the direction of the packet relative to the first packet in the flow.
+// Returns 0 if the packet is in the same direction as the first packet, 1 if in the opposite direction.
+// Returns 0 if the flow has no packets or if network layer information is unavailable.
 func (flow *Flow) GetDirection(packet gopacket.Packet) int {
 	flow.mtx.Lock()
 	defer flow.mtx.Unlock()
+
+	// Check if flow has any packets to avoid panic
+	if len(flow.packets) == 0 {
+		return 0
+	}
 
 	p := flow.packets[0]
 	if nlFirstPacket, nlCurrPacket := p.NetworkLayer(), packet.NetworkLayer(); nlFirstPacket != nil && nlCurrPacket != nil {

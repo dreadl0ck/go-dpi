@@ -66,113 +66,112 @@ var lpiCodeToCategory = map[uint32]types.Category{
 
 // lpiCodeToProtocol maps the LPI protocol codes to go-dpi protocols.
 var lpiCodeToProtocol = map[uint32]types.Protocol{
-	/* TCP Protocols */
-	0:   types.HTTP,
-	1:   types.SMTP,
-	2:   types.BITTORRENT,
-	3:   types.IRC,
-	4:   types.NCSOFT, /* NCSoft proprietary protocol */
-	5:   types.DC,     /* DirectConnect */
-	6:   types.EMULE,
-	7:   types.GNUTELLA,
-	8:   types.SSH,
-	9:   types.HTTPS,
-	10:  types.RAZOR, /* Razor database updates */
-	11:  types.POP3,
-	12:  types.SSL, /* SSL that isn't HTTPS */
-	13:  types.MSN,
-	14:  types.DNS,
-	15:  types.IMAP,
-	16:  types.RTSP,
-	17:  types.ID, /* Identification protocol */
-	18:  types.YAHOO,
-	19:  types.ICQ,
-	20:  types.TELNET,
-	21:  types.RDP,      /* Windows remote desktop protocol */
-	22:  types.TDS,      /* MS SQL Server protocol */
-	23:  types.RPC_SCAN, /* Port 135 exploit attempt */
-	24:  types.SMB,      /* Server Message Block protocol e.g. samba */
-	25:  types.WARCRAFT3,
-	26:  types.ETRUST,      /* Updates for the eTrust virus scanner */
-	27:  types.FTP_CONTROL, /* FTP control e.g. port 21 or 2121 */
-	28:  types.FTP_DATA,
-	29:  types.EYE,  /* Yahoo Game Server Browser */
-	30:  types.ARES, /* Ares peer-to-peer protocol */
-	31:  types.NNTP, /* Newsfeeds */
-	32:  types.NAPSTER,
-	33:  types.BNCS,         /* Battle.net Chat Server */
-	34:  types.RFB,          /* Remote Frame Buffer protocol */
-	35:  types.YAHOO_WEBCAM, /* Webcam over Yahoo Messenger */
-	36:  types.ICA,          /* Citrix ICA */
-	37:  types.NETBIOS,
-	38:  types.KMS, /* Possibly a vista activation service */
-	39:  types.MS_DS,
-	40:  types.SIP, /* Session Initiation Protocol*/
-	41:  types.MZINGA,
-	42:  types.GOKUCHAT,
-	43:  types.XUNLEI,
-	44:  types.DXP,
-	45:  types.HAMACHI,
-	46:  types.BLIZZARD,
-	47:  types.MSNV,       /* MSN Voice */
-	48:  types.BITEXT,     /* BitTorrent extensions */
-	49:  types.MITGLIEDER, /* Mitglieder trojan */
-	50:  types.TOR,        /* TOR (The Onion Router) */
-	51:  types.MYSQL,
-	52:  types.HTTP_TUNNEL, /* Tunnelling via HTTP */
-	53:  types.RSYNC,
-	54:  types.NOTES_RPC,        /* Lotus Notes RPC (Domino) */
-	55:  types.AZUREUS,          /* Azureus Extension */
-	56:  types.PANDO,            /* Pando P2P protocol */
-	57:  types.FLASH,            /* Flash Player specific behaviour */
-	58:  types.STEAM,            /* Steam TCP download, i.e. downloading games */
-	59:  types.TRACKMANIA,       /* Trackmania control protocol */
-	60:  types.CONQUER,          /* Conquer Online game */
-	61:  types.RTMP,             /* Adobe RTMP */
-	62:  types.TIP,              /* Transaction Internet Protocol */
-	63:  types.NONSTANDARD_HTTP, /* HTTP on unconventional port numbers */
-	64:  types.HARVEYS,          /* Photo transfers for Harveys Real Estate */
-	65:  types.SHOUTCAST,
-	66:  types.HTTP_BADPORT, /* HTTP over port 443, leading to failure */
-	67:  types.POSTGRESQL,   /* Postgresql protocol */
-	68:  types.WOW,          /* World of Warcraft */
-	69:  types.M4U,          /* Message4U (Aus SMS service) */
-	70:  types.RBLS,         /* Realtime Block List updates */
-	71:  types.OPENVPN,
-	72:  types.TELECOMKEY,   /* Proto used to talk to telecomkey.com */
-	73:  types.IMAPS,        /* IMAP over SSL */
-	74:  types.MSNC,         /* MSN Client Protocol */
-	75:  types.YAHOO_ERROR,  /* Yahoo method of dealing with HTTP errors */
-	76:  types.IMESH,        /* iMesh */
-	77:  types.PPTP,         /* MS Tunnelling protocol */
-	78:  types.AFP,          /* Apple Filing Protocol */
-	79:  types.PDBOX,        /* Korean P2P TV protocol */
-	80:  types.EA_GAMES,     /* EA Games protocol */
-	81:  types.ZYNGA,        /* Protocol used by Zynga games */
-	82:  types.CLUBBOX,      /* Another Korean file sharing protocol */
-	83:  types.WINMX,        /* WinMX */
-	84:  types.INVALID_BT,   /* Bittorrent in one direction but not other */
-	85:  types.WEBLOGIC,     /* Weblogic server */
-	86:  types.INVALID_HTTP, /* HTTP server sending raw HTML */
-	87:  types.COD_WAW,      /* Call of Duty: World at War TCP */
-	88:  types.MP2P,
-	89:  types.SVN,
-	90:  types.SOCKS5,
-	91:  types.SOCKS4,
-	92:  types.INVALID_SMTP,
-	93:  types.MMS,       /* Microsoft Media Server */
-	94:  types.CISCO_VPN, /* Cisco VPN protocol */
-	95:  types.WEB_JUNK,  /* Clients communicating with web servers using non-HTTP */
-	96:  types.CVS,
-	97:  types.LDAP,         /* LDAP */
-	98:  types.INVALID_POP3, /* POP commands send to an SMTP server */
-	99:  types.TEAMVIEWER,
-	100: types.XMPP,       /* a.k.a. Jabber */
+	0: types.HTTP,
+	1: types.SMTP,
+	2: types.BITTORRENT,
+	3: types.IRC,
+	4: types.NCSOFT, /* NCSoft proprietary protocol */
+	5: types.DC, /* DirectConnect */
+	6: types.EMULE,
+	7: types.GNUTELLA,
+	8: types.SSH,
+	9: types.HTTPS,
+	10: types.RAZOR, /* Razor database updates */
+	11: types.POP3,
+	12: types.SSL, /* SSL that isn't HTTPS */
+	13: types.MSN,
+	14: types.DNS,
+	15: types.IMAP,
+	16: types.RTSP,
+	17: types.ID, /* Identification protocol */
+	18: types.YAHOO,
+	19: types.ICQ,
+	20: types.TELNET,
+	21: types.RDP, /* Windows remote desktop protocol */
+	22: types.TDS, /* MS SQL Server protocol */
+	23: types.RPC_SCAN, /* Port 135 exploit attempt */
+	24: types.SMB, /* Server Message Block protocol e.g. samba */
+	25: types.WARCRAFT3,
+	26: types.ETRUST, /* Updates for the eTrust virus scanner */
+	27: types.FTP_CONTROL, /* FTP control e.g. port 21 or 2121 */
+	28: types.FTP_DATA,
+	29: types.EYE, /* Yahoo Game Server Browser */
+	30: types.ARES, /* Ares peer-to-peer protocol */
+	31: types.NNTP, /* Newsfeeds */
+	32: types.NAPSTER,
+	33: types.BNCS, /* Battle.net Chat Server */
+	34: types.RFB, /* Remote Frame Buffer protocol */
+	35: types.YAHOO_WEBCAM, /* Webcam over Yahoo Messenger */
+	36: types.ICA, /* Citrix ICA */
+	37: types.NETBIOS,
+	38: types.KMS, /* Possibly a vista activation service */
+	39: types.MS_DS,
+	40: types.SIP, /* Session Initiation Protocol*/
+	41: types.MZINGA,
+	42: types.GOKUCHAT,
+	43: types.XUNLEI,
+	44: types.DXP,
+	45: types.HAMACHI,
+	46: types.BLIZZARD,
+	47: types.MSNV, /* MSN Voice */
+	48: types.BITEXT, /* BitTorrent extensions */
+	49: types.MITGLIEDER, /* Mitglieder trojan */
+	50: types.TOR, /* TOR (The Onion Router) */
+	51: types.MYSQL,
+	52: types.HTTP_TUNNEL, /* Tunnelling via HTTP */
+	53: types.RSYNC,
+	54: types.NOTES_RPC, /* Lotus Notes RPC (Domino) */
+	55: types.AZUREUS, /* Azureus Extension */
+	56: types.PANDO, /* Pando P2P protocol */
+	57: types.FLASH, /* Flash Player specific behaviour */
+	58: types.STEAM, /* Steam TCP download, i.e. downloading games */
+	59: types.TRACKMANIA, /* Trackmania control protocol */
+	60: types.CONQUER, /* Conquer Online game */
+	61: types.RTMP, /* Adobe RTMP */
+	62: types.TIP, /* Transaction Internet Protocol */
+	63: types.NONSTANDARD_HTTP, /* HTTP on unconventional port numbers */
+	64: types.HARVEYS, /* Photo transfers for Harveys Real Estate */
+	65: types.SHOUTCAST,
+	66: types.HTTP_BADPORT, /* HTTP over port 443, leading to failure */
+	67: types.POSTGRESQL, /* Postgresql protocol */
+	68: types.WOW, /* World of Warcraft */
+	69: types.M4U, /* Message4U (Aus SMS service) */
+	70: types.RBLS, /* Realtime Block List updates */
+	71: types.OPENVPN,
+	72: types.TELECOMKEY, /* Proto used to talk to telecomkey.com */
+	73: types.IMAPS, /* IMAP over SSL */
+	74: types.MSNC, /* MSN Client Protocol */
+	75: types.YAHOO_ERROR, /* Yahoo method of dealing with HTTP errors */
+	76: types.IMESH, /* iMesh */
+	77: types.PPTP, /* MS Tunnelling protocol */
+	78: types.AFP, /* Apple Filing Protocol */
+	79: types.PDBOX, /* Korean P2P TV protocol */
+	80: types.EA_GAMES, /* EA Games protocol */
+	81: types.ZYNGA, /* Protocol used by Zynga games */
+	82: types.CLUBBOX, /* Another Korean file sharing protocol */
+	83: types.WINMX, /* WinMX */
+	84: types.INVALID_BT, /* Bittorrent in one direction but not other */
+	85: types.WEBLOGIC, /* Weblogic server */
+	86: types.INVALID_HTTP, /* HTTP server sending raw HTML */
+	87: types.COD_WAW, /* Call of Duty: World at War TCP */
+	88: types.MP2P,
+	89: types.SVN,
+	90: types.SOCKS5,
+	91: types.SOCKS4,
+	92: types.INVALID_SMTP,
+	93: types.MMS, /* Microsoft Media Server */
+	94: types.CISCO_VPN, /* Cisco VPN protocol */
+	95: types.WEB_JUNK, /* Clients communicating with web servers using non-HTTP */
+	96: types.CVS,
+	97: types.LDAP, /* LDAP */
+	98: types.INVALID_POP3, /* POP commands send to an SMTP server */
+	99: types.TEAMVIEWER,
+	100: types.XMPP, /* a.k.a. Jabber */
 	101: types.SECONDLIFE, /* SecondLife over TCP */
 	102: types.KASEYA,
 	103: types.KASPERSKY,
 	104: types.JEDI, /* Citrix Jedi */
-	105: types.CGP,  /* Citrix CGP */
+	105: types.CGP, /* Citrix CGP */
 	106: types.YOUKU,
 	107: types.STUN,
 	108: types.XYMON,
@@ -190,13 +189,13 @@ var lpiCodeToProtocol = map[uint32]types.Protocol{
 	120: types.TELNET_EXPLOIT,
 	121: types.POP3S, /* POP3 over TLS/SSL */
 	122: types.PSN_STORE,
-	123: types.SKYPE_TCP,  /* Skype TCP sessions */
+	123: types.SKYPE_TCP, /* Skype TCP sessions */
 	124: types.APPLE_PUSH, /* Apple push notifications */
-	125: types.XMPPS,      /* XMPP over TLS/SSL */
-	126: types.SMTPS,      /* Legacy Secure SMTP */
-	127: types.NNTPS,      /* NNTP over TLS/SSL */
-	128: types.JAVA,       /* Serialised Java Objects */
-	129: types.IPOP,       /* IP over P2P */
+	125: types.XMPPS, /* XMPP over TLS/SSL */
+	126: types.SMTPS, /* Legacy Secure SMTP */
+	127: types.NNTPS, /* NNTP over TLS/SSL */
+	128: types.JAVA, /* Serialised Java Objects */
+	129: types.IPOP, /* IP over P2P */
 	130: types.SPOTIFY,
 	131: types.RUNESCAPE,
 	132: types.WHOIS,
@@ -344,266 +343,274 @@ var lpiCodeToProtocol = map[uint32]types.Protocol{
 	274: types.BEAM,
 	275: types.VHDP2P,
 	276: types.CLASSIN,
-	277: types.UDP,
-	278: types.UDP_SIP,
-	279: types.UDP_BTDHT,
-	280: types.UDP_GNUTELLA,
-	281: types.UDP_DNS,
-	282: types.UDP_DHCP,
-	283: types.UDP_QUAKE,
-	284: types.UDP_STEAM,
-	285: types.UDP_STEAM_FRIENDS,
-	286: types.UDP_STEAM_INHOMEBROADCAST,
-	287: types.UDP_WIN_MESSAGE,
-	288: types.UDP_GAMESPY,
-	289: types.UDP_EMULE,
-	290: types.UDP_EYE,
-	291: types.UDP_RTP,
-	292: types.UDP_MSN_VIDEO,
-	293: types.UDP_COD, /* Call of Duty game protocol */
-	294: types.UDP_NTP,
-	295: types.UDP_MP2P,        /* MP2P protocol (Piolet, Manolito etc.) */
-	296: types.UDP_SPAMFIGHTER, /* SpamFighter */
-	297: types.UDP_TRACEROUTE,
-	298: types.UDP_SECONDLIFE,
-	299: types.UDP_HL,        /* Halflife, includes derivatives such as CounterStrike and Garry's Mod */
-	300: types.UDP_XLSP,      /* XLSP - Xbox Live */
-	301: types.UDP_DEMONWARE, /* Company that does game networking */
-	302: types.UDP_IMESH,     /* iMesh */
-	303: types.UDP_OPASERV,   /* Opaserv worm */
-	304: types.UDP_STUN,      /* STUN NAT traversal */
-	305: types.UDP_SQLEXP,    /* MS SQL Server worm, called SQLExp */
-	306: types.UDP_MSN_CACHE, /* MSN cache callback protocol */
-	307: types.UDP_DIABLO2,   /* Diablo 2 game protocol */
-	308: types.UDP_IPV6,      /* IPv6 tunnelled directly over UDP */
-	309: types.UDP_ORBIT,     /* Orbit downloader */
-	310: types.UDP_TEREDO,
-	311: types.UDP_KADEMLIA,  /* Unknown flavour of kademlia */
-	312: types.UDP_PANDO,     /* Pando DHT and Peer Exchange */
-	313: types.UDP_ESP,       /* ESP/IPSec encapsulated in UDP */
-	314: types.UDP_PSN,       /* Playstation Network */
-	315: types.UDP_REAL,      /* RDT - the Real Data Transport protocol */
-	316: types.UDP_GNUTELLA2, /* Gnutella2 */
-	317: types.UDP_PYZOR,     /* Python implementation of Razor */
-	318: types.UDP_SKYPE,
-	319: types.UDP_ISAKMP, /* ref: RFC 2408 */
-	320: types.UDP_SNMP,
-	321: types.UDP_BACKWEB, /* BackWeb Polite Protocol */
-	322: types.UDP_STARCRAFT,
-	323: types.UDP_XFIRE_P2P,  /* Xfire P2P protocol */
-	324: types.UDP_THQ,        /* Protocol used by THQ games */
-	325: types.UDP_NEWERTH,    /* Heroes of Newerth */
-	326: types.UDP_LINKPROOF,  /* Linkproof device packets */
-	327: types.UDP_WORM_22105, /* Chinese worm that uses port 22105 */
-	328: types.UDP_QQ,         /* Tencent QQ */
-	329: types.UDP_SLP,        /* Service Location Protocol, RFC 2608 */
-	330: types.UDP_ESO,        /* Games using Ensemble Studios Online */
-	331: types.UDP_SSDP,
-	332: types.UDP_NETBIOS,  /* Netbios lookup */
-	333: types.UDP_CP_RDP,   /* Checkpoint RDP */
-	334: types.UDP_VENTRILO, /* Ventrilo VoiceChat */
-	335: types.UDP_MTA,      /* Multitheftauto */
-	336: types.UDP_PPLIVE,
-	337: types.UDP_JEDI_ACADEMY, /* Jedi Academy game */
-	338: types.UDP_MOH,          /* Medal of Honor game */
-	339: types.UDP_TREMULOUS,    /* Tremulous - free OSS FPS */
-	340: types.UDP_VIVOX,        /* Vivox voice chat */
-	341: types.UDP_IPMSG,        /* IPMsg messenger */
-	342: types.UDP_TEAMSPEAK,
-	343: types.UDP_DC,       /* DirectConnect UDP commands */
-	344: types.UDP_FREECHAL, /* FreeChal P2P */
-	345: types.UDP_XUNLEI,
-	346: types.UDP_KAZAA,
-	347: types.UDP_NORTON,    /* Norton Antivirus probe */
-	348: types.UDP_CISCO_VPN, /* Cisco VPN (port 10000) */
-	349: types.UDP_RTCP,
-	350: types.UDP_UNREAL, /* Unreal server query protocol */
-	351: types.UDP_TFTP,
-	352: types.UDP_GARENA,   /* A gaming platform */
-	353: types.UDP_PPSTREAM, /* PPStream - Chinese P2PTV */
-	354: types.UDP_FORTINET, /* Fortinet update protocol */
-	355: types.UDP_TVANTS,   /* TVants P2PTV - no longer active */
-	356: types.UDP_STORM_WORM,
-	357: types.UDP_BATTLEFIELD, /* Battlefield series of games */
-	358: types.UDP_SOPCAST,
-	359: types.UDP_SERIALNUMBERD,
-	360: types.UDP_LDAP_AD,
-	361: types.UDP_RTMFP,
-	362: types.UDP_L2TP,
-	363: types.UDP_SYSLOG,
-	364: types.UDP_AKAMAI,
-	365: types.UDP_RADIUS,
-	366: types.UDP_HAMACHI,
-	367: types.UDP_BJNP, /* Canon BJNP printing protocol */
-	368: types.UDP_KASPERSKY,
-	369: types.UDP_GSM,
-	370: types.UDP_JEDI, /* Citrix Jedi */
-	371: types.UDP_YOUKU,
-	372: types.UDP_YOUDAO_DICT,
-	373: types.UDP_DRIVESHARE,
-	374: types.UDP_CIRN, /* Carpathia Intelligent Routing Network */
-	375: types.UDP_NEVERWINTER,
-	376: types.UDP_QQLIVE,
-	377: types.UDP_TEAMVIEWER,
-	378: types.UDP_ARES,
-	379: types.UDP_EPSON,
-	380: types.UDP_AKAMAI_TRANSFER,
-	381: types.UDP_DCC,
-	382: types.UDP_AMANDA,
-	383: types.UDP_NETFLOW,
-	384: types.UDP_ZEROACCESS,
-	385: types.UDP_VXWORKS_EXPLOIT,
-	386: types.UDP_APPLE_FACETIME_INIT,
-	387: types.UDP_STEAM_LOCALBROADCAST, /* Protocol used by Steam to discover clients on the local network */
-	388: types.UDP_LANSYNC,              /* LANSync, used by DropBox */
-	389: types.UDP_BTSYNC,
-	390: types.UDP_MSOFFICE_MAC, /* MS Office for Mac anti-piracy */
-	391: types.UDP_SPOTIFY_BROADCAST,
-	392: types.UDP_MDNS, /* Multicast DNS */
-	393: types.UDP_FASP,
-	394: types.UDP_RAKNET,
-	395: types.UDP_OPENVPN,
-	396: types.UDP_NOE, /* Alcatel's New Office Environment */
-	397: types.UDP_VIBER,
-	398: types.UDP_DTLS,
-	399: types.UDP_ICP,
-	400: types.UDP_LOL,        /* League of Legends */
-	401: types.UDP_SANANDREAS, /* San Andreas Multiplayer */
-	402: types.UDP_MFNP,       /* Canon MFNP Printer protocol */
-	403: types.UDP_FUNSHION,
-	404: types.UDP_QUIC,
-	405: types.UDP_AVAST_DNS,
-	406: types.UDP_DB2,
-	407: types.UDP_NATPMP,
-	408: types.UDP_GPRS_TUNNEL,
-	409: types.UDP_WECHAT,
-	410: types.UDP_NOCTION,
-	411: types.UDP_ARMA_SERVER, /* Includes DayZ */
-	412: types.UDP_PLANETSIDE2,
-	413: types.UDP_RWTH_AACHEN, /* RWTH-Aachen University research */
-	414: types.UDP_BMDP,        /* Part of Microsoft ADS */
-	415: types.UDP_DOTA2,
-	416: types.UDP_LINE,
-	417: types.UDP_ZOOM,
-	418: types.UDP_HEROES_GENERALS, /* Heroes and Generals */
-	419: types.UDP_WARTHUNDER,
-	420: types.UDP_H1Z1,
-	421: types.UDP_CS_GLOBAL_OFFENSIVE,
-	422: types.UDP_NTP_REFLECT, /* NTP reflection attack */
-	423: types.UDP_PUNKBUSTER,
-	424: types.UDP_ROBOCRAFT,
-	425: types.UDP_CISCO_SSLVPN,
-	426: types.UDP_ACERCLOUD,
-	427: types.UDP_360CN,
-	428: types.UDP_WOLF_ET,
-	429: types.UDP_KUGOU,
-	430: types.UDP_XUNLEI_JSQ,
-	431: types.UDP_KANKAN,
-	432: types.UDP_QQPCMGR,
-	433: types.UDP_DIANPING,
-	434: types.UDP_XUNYOU,
-	435: types.UDP_FORTICLIENT_SSLVPN,
-	436: types.UDP_DISCORD,
-	437: types.UDP_NETCORE,
-	438: types.UDP_ARMA3_SERVER,
-	439: types.UDP_BAIDU_YUN_P2P,
-	440: types.UDP_YY,
-	441: types.UDP_OVERWATCH,
-	442: types.UDP_BACNET,
-	443: types.UDP_ARK_SURVIVAL,
-	444: types.UDP_360P2P,
-	445: types.UDP_PORTMAP_RPC,
-	446: types.UDP_NINTENDO,
-	447: types.UDP_CHIVALRY,
-	448: types.UDP_DOYO,
-	449: types.UDP_NETCAT_CCTV,
-	450: types.UDP_N2PING,
-	451: types.UDP_RAMSEY_DASH,
-	452: types.UDP_UBISOFT_GAMES,
-	453: types.UDP_THE_CREW,
-	454: types.UDP_TURBOVPN,
-	455: types.UDP_GEARSOFWAR,
-	456: types.UDP_RDP,
-	457: types.UDP_HOTS,
-	458: types.UDP_VPNMASTER,
-	459: types.UDP_DIANSHIJIA,
-	460: types.UDP_PS4_REMOTEPLAY,
-	461: types.UDP_STARCITIZEN,
-	462: types.UDP_WEBEX,
-	463: types.UDP_HALO_ONLINE,
-	464: types.UDP_GOTOMEETING,
-	465: types.UDP_CROSSOUT,
-	466: types.UDP_UMEYE,
-	467: types.UDP_RISING_STORM,
-	468: types.UDP_CROSSFIRE,
-	469: types.UDP_MERAKICLOUD,
-	470: types.UDP_SNAPVPN,
-	471: types.UDP_DAHUA,
-	472: types.UDP_STARLEAF,
-	473: types.UDP_FOSCAM,
-	474: types.UDP_DESTINY,
-	475: types.UDP_BAOFENG,
-	476: types.UDP_TORCHLIGHT2,
-	477: types.UDP_SMITE,
-	478: types.UDP_COUNTERSTRIKE_16,
-	479: types.UDP_VPNROBOT,
-	480: types.UDP_TF2,
-	481: types.UDP_GANGSOFSPACE,
-	482: types.UDP_COMBATARMS,
-	483: types.UDP_COMBATARMS_P2P,
-	484: types.UDP_PANIPANI,
-	485: types.UDP_FEITWO,
-	486: types.UDP_MOONHUNTERS,
-	487: types.UDP_HELIBORNE,
-	488: types.UDP_KINGOFGLORY,
-	489: types.UDP_ASSETTO_CORSA,
-	490: types.UDP_CACAOWEB,
-	491: types.UDP_ZALO_CALL,
-	492: types.UDP_PALADINS,
-	493: types.UDP_CHARGEN_EXPLOIT,
-	494: types.UDP_TOX,
-	495: types.UDP_HOLLA,
-	496: types.UDP_RRSHARE,
-	497: types.UDP_QQSPEEDMOBILE,
-	498: types.UDP_LOADOUT,
-	499: types.UDP_GANGLIA,
-	500: types.UDP_TALESRUNNER,
-	501: types.UDP_FREEFIRE,
-	502: types.UDP_HEROES_EVOLVED,
-	503: types.UDP_RULES_OF_SURVIVAL,
-	504: types.UDP_CONTRACT_WARS,
-	505: types.UDP_ARD,
-	506: types.UDP_QVOD,
-	507: types.UDP_YUANFUDAO,
-	508: types.UDP_ROCKET_LEAGUE,
-	509: types.UDP_CLOUDFLARE_WARP,
-	510: types.UDP_WIREGUARD,
-	511: types.UDP_COD_MOBILE,
-	512: types.UDP_NVIDIA_GAMESTREAM,
-	513: types.UDP_CLASSIN,
-	514: types.REJECTION, /* All responses are 0x02 */
-	//515: types.MYSTERY_9000,	/* Occurs on tcp port 9000 */
-	//516: types.MYSTERY_PSPR,
-	//517: types.MYSTERY_8000,
-	//518: types.MYSTERY_IG,
-	//519: types.MYSTERY_CONN,
-	//520: types.MYSTERY_SYMANTEC,
-	//521: types.MYSTERY_RXXF,
-	//522: types.UDP_MYSTERY_0D,
-	//523: types.UDP_MYSTERY_99,
-	//524: types.UDP_MYSTERY_8000,
-	//525: types.UDP_MYSTERY_45,
-	//526: types.UDP_MYSTERY_0660,
-	//527: types.UDP_MYSTERY_E9,
-	//528: types.UDP_MYSTERY_QQ,
-	//529: types.UDP_MYSTERY_61_72,
-	//530: types.UDP_MYSTERY_05,
-	531: types.ICMP,
-	532: types.INVALID, /* No single valid protocol */
-	533: types.NO_PAYLOAD,
-	534: types.NO_FIRSTPKT,
-	535: types.UNSUPPORTED,
-	536: types.UNKNOWN,
+	277: types.TRANSOCKS,
+	278: types.RAGNAROK_ONLINE,
+	279: types.ETHERNETIP,
+
+	/* UDP Protocols */
+	280: types.UDP,
+	281: types.UDP_SIP,
+	282: types.UDP_BTDHT,
+	283: types.UDP_GNUTELLA,
+	284: types.UDP_DNS,
+	285: types.UDP_DHCP,
+	286: types.UDP_QUAKE,
+	287: types.UDP_STEAM,
+	288: types.UDP_STEAM_FRIENDS,
+	289: types.UDP_STEAM_INHOMEBROADCAST,
+	290: types.UDP_WIN_MESSAGE,
+	291: types.UDP_GAMESPY,
+	292: types.UDP_EMULE,
+	293: types.UDP_EYE,
+	294: types.UDP_RTP,
+	295: types.UDP_ETHERNETIP,
+	296: types.UDP_CIP_IO, /* Common industrial protocol IO */
+	297: types.UDP_MSN_VIDEO,
+	298: types.UDP_COD, /* Call of Duty game protocol */
+	299: types.UDP_NTP,
+	300: types.UDP_MP2P, /* MP2P protocol (Piolet, Manolito etc.) */
+	301: types.UDP_SPAMFIGHTER, /* SpamFighter */
+	302: types.UDP_TRACEROUTE,
+	303: types.UDP_SECONDLIFE,
+	304: types.UDP_HL, /* Halflife, includes derivatives such as CounterStrike and Garry's Mod */
+	305: types.UDP_XLSP, /* XLSP - Xbox Live */
+	306: types.UDP_DEMONWARE, /* Company that does game networking */
+	307: types.UDP_IMESH, /* iMesh */
+	308: types.UDP_OPASERV, /* Opaserv worm */
+	309: types.UDP_STUN, /* STUN NAT traversal */
+	310: types.UDP_SQLEXP, /* MS SQL Server worm, called SQLExp */
+	311: types.UDP_MSN_CACHE, /* MSN cache callback protocol */
+	312: types.UDP_DIABLO2, /* Diablo 2 game protocol */
+	313: types.UDP_IPV6, /* IPv6 tunnelled directly over UDP */
+	314: types.UDP_ORBIT, /* Orbit downloader */
+	315: types.UDP_TEREDO,
+	316: types.UDP_KADEMLIA, /* Unknown flavour of kademlia */
+	317: types.UDP_PANDO, /* Pando DHT and Peer Exchange */
+	318: types.UDP_ESP, /* ESP/IPSec encapsulated in UDP */
+	319: types.UDP_PSN, /* Playstation Network */
+	320: types.UDP_REAL, /* RDT - the Real Data Transport protocol */
+	321: types.UDP_GNUTELLA2, /* Gnutella2 */
+	322: types.UDP_PYZOR, /* Python implementation of Razor */
+	323: types.UDP_SKYPE,
+	324: types.UDP_ISAKMP, /* ref: RFC 2408 */
+	325: types.UDP_SNMP,
+	326: types.UDP_BACKWEB, /* BackWeb Polite Protocol */
+	327: types.UDP_STARCRAFT,
+	328: types.UDP_XFIRE_P2P, /* Xfire P2P protocol */
+	329: types.UDP_THQ, /* Protocol used by THQ games */
+	330: types.UDP_NEWERTH, /* Heroes of Newerth */
+	331: types.UDP_LINKPROOF, /* Linkproof device packets */
+	332: types.UDP_WORM_22105, /* Chinese worm that uses port 22105 */
+	333: types.UDP_QQ, /* Tencent QQ */
+	334: types.UDP_SLP, /* Service Location Protocol, RFC 2608 */
+	335: types.UDP_ESO, /* Games using Ensemble Studios Online */
+	336: types.UDP_SSDP,
+	337: types.UDP_NETBIOS, /* Netbios lookup */
+	338: types.UDP_CP_RDP, /* Checkpoint RDP */
+	339: types.UDP_VENTRILO, /* Ventrilo VoiceChat */
+	340: types.UDP_MTA, /* Multitheftauto */
+	341: types.UDP_PPLIVE,
+	342: types.UDP_JEDI_ACADEMY, /* Jedi Academy game */
+	343: types.UDP_MOH, /* Medal of Honor game */
+	344: types.UDP_TREMULOUS, /* Tremulous - free OSS FPS */
+	345: types.UDP_VIVOX, /* Vivox voice chat */
+	346: types.UDP_IPMSG, /* IPMsg messenger */
+	347: types.UDP_TEAMSPEAK,
+	348: types.UDP_DC, /* DirectConnect UDP commands */
+	349: types.UDP_FREECHAL, /* FreeChal P2P */
+	350: types.UDP_XUNLEI,
+	351: types.UDP_KAZAA,
+	352: types.UDP_NORTON, /* Norton Antivirus probe */
+	353: types.UDP_CISCO_VPN, /* Cisco VPN (port 10000) */
+	354: types.UDP_RTCP,
+	355: types.UDP_UNREAL, /* Unreal server query protocol */
+	356: types.UDP_TFTP,
+	357: types.UDP_GARENA, /* A gaming platform */
+	358: types.UDP_PPSTREAM, /* PPStream - Chinese P2PTV */
+	359: types.UDP_FORTINET, /* Fortinet update protocol */
+	360: types.UDP_TVANTS, /* TVants P2PTV - no longer active */
+	361: types.UDP_STORM_WORM,
+	362: types.UDP_BATTLEFIELD, /* Battlefield series of games */
+	363: types.UDP_SOPCAST,
+	364: types.UDP_SERIALNUMBERD,
+	365: types.UDP_LDAP_AD,
+	366: types.UDP_RTMFP,
+	367: types.UDP_L2TP,
+	368: types.UDP_SYSLOG,
+	369: types.UDP_AKAMAI,
+	370: types.UDP_RADIUS,
+	371: types.UDP_HAMACHI,
+	372: types.UDP_BJNP, /* Canon BJNP printing protocol */
+	373: types.UDP_KASPERSKY,
+	374: types.UDP_GSM,
+	375: types.UDP_JEDI, /* Citrix Jedi */
+	376: types.UDP_YOUKU,
+	377: types.UDP_YOUDAO_DICT,
+	378: types.UDP_DRIVESHARE,
+	379: types.UDP_CIRN, /* Carpathia Intelligent Routing Network */
+	380: types.UDP_NEVERWINTER,
+	381: types.UDP_QQLIVE,
+	382: types.UDP_TEAMVIEWER,
+	383: types.UDP_ARES,
+	384: types.UDP_EPSON,
+	385: types.UDP_AKAMAI_TRANSFER,
+	386: types.UDP_DCC,
+	387: types.UDP_AMANDA,
+	388: types.UDP_NETFLOW,
+	389: types.UDP_ZEROACCESS,
+	390: types.UDP_VXWORKS_EXPLOIT,
+	391: types.UDP_APPLE_FACETIME_INIT,
+	392: types.UDP_STEAM_LOCALBROADCAST, /* Protocol used by Steam to discover clients on the local network */
+	393: types.UDP_LANSYNC, /* LANSync, used by DropBox */
+	394: types.UDP_BTSYNC,
+	395: types.UDP_MSOFFICE_MAC, /* MS Office for Mac anti-piracy */
+	396: types.UDP_SPOTIFY_BROADCAST,
+	397: types.UDP_MDNS, /* Multicast DNS */
+	398: types.UDP_FASP,
+	399: types.UDP_RAKNET,
+	400: types.UDP_OPENVPN,
+	401: types.UDP_NOE, /* Alcatel's New Office Environment */
+	402: types.UDP_VIBER,
+	403: types.UDP_DTLS,
+	404: types.UDP_ICP,
+	405: types.UDP_LOL, /* League of Legends */
+	406: types.UDP_SANANDREAS, /* San Andreas Multiplayer */
+	407: types.UDP_MFNP, /* Canon MFNP Printer protocol */
+	408: types.UDP_FUNSHION,
+	409: types.UDP_QUIC,
+	410: types.UDP_AVAST_DNS,
+	411: types.UDP_DB2,
+	412: types.UDP_NATPMP,
+	413: types.UDP_GPRS_TUNNEL,
+	414: types.UDP_WECHAT,
+	415: types.UDP_NOCTION,
+	416: types.UDP_ARMA_SERVER, /* Includes DayZ */
+	417: types.UDP_PLANETSIDE2,
+	418: types.UDP_RWTH_AACHEN, /* RWTH-Aachen University research */
+	419: types.UDP_BMDP, /* Part of Microsoft ADS */
+	420: types.UDP_DOTA2,
+	421: types.UDP_LINE,
+	422: types.UDP_ZOOM,
+	423: types.UDP_HEROES_GENERALS, /* Heroes and Generals */
+	424: types.UDP_WARTHUNDER,
+	425: types.UDP_H1Z1,
+	426: types.UDP_CS_GLOBAL_OFFENSIVE,
+	427: types.UDP_NTP_REFLECT, /* NTP reflection attack */
+	428: types.UDP_PUNKBUSTER,
+	429: types.UDP_ROBOCRAFT,
+	430: types.UDP_CISCO_SSLVPN,
+	431: types.UDP_ACERCLOUD,
+	432: types.UDP_360CN,
+	433: types.UDP_WOLF_ET,
+	434: types.UDP_KUGOU,
+	435: types.UDP_XUNLEI_JSQ,
+	436: types.UDP_KANKAN,
+	437: types.UDP_QQPCMGR,
+	438: types.UDP_DIANPING,
+	439: types.UDP_XUNYOU,
+	440: types.UDP_FORTICLIENT_SSLVPN,
+	441: types.UDP_DISCORD,
+	442: types.UDP_NETCORE,
+	443: types.UDP_ARMA3_SERVER,
+	444: types.UDP_BAIDU_YUN_P2P,
+	445: types.UDP_YY,
+	446: types.UDP_OVERWATCH,
+	447: types.UDP_BACNET,
+	448: types.UDP_ARK_SURVIVAL,
+	449: types.UDP_360P2P,
+	450: types.UDP_PORTMAP_RPC,
+	451: types.UDP_NINTENDO,
+	452: types.UDP_CHIVALRY,
+	453: types.UDP_DOYO,
+	454: types.UDP_NETCAT_CCTV,
+	455: types.UDP_N2PING,
+	456: types.UDP_RAMSEY_DASH,
+	457: types.UDP_UBISOFT_GAMES,
+	458: types.UDP_THE_CREW,
+	459: types.UDP_TURBOVPN,
+	460: types.UDP_GEARSOFWAR,
+	461: types.UDP_RDP,
+	462: types.UDP_HOTS,
+	463: types.UDP_VPNMASTER,
+	464: types.UDP_DIANSHIJIA,
+	465: types.UDP_PS4_REMOTEPLAY,
+	466: types.UDP_STARCITIZEN,
+	467: types.UDP_WEBEX,
+	468: types.UDP_HALO_ONLINE,
+	469: types.UDP_GOTOMEETING,
+	470: types.UDP_CROSSOUT,
+	471: types.UDP_UMEYE,
+	472: types.UDP_RISING_STORM,
+	473: types.UDP_CROSSFIRE,
+	474: types.UDP_MERAKICLOUD,
+	475: types.UDP_SNAPVPN,
+	476: types.UDP_DAHUA,
+	477: types.UDP_STARLEAF,
+	478: types.UDP_FOSCAM,
+	479: types.UDP_DESTINY,
+	480: types.UDP_BAOFENG,
+	481: types.UDP_TORCHLIGHT2,
+	482: types.UDP_SMITE,
+	483: types.UDP_COUNTERSTRIKE_16,
+	484: types.UDP_VPNROBOT,
+	485: types.UDP_TF2,
+	486: types.UDP_GANGSOFSPACE,
+	487: types.UDP_COMBATARMS,
+	488: types.UDP_COMBATARMS_P2P,
+	489: types.UDP_PANIPANI,
+	490: types.UDP_FEITWO,
+	491: types.UDP_MOONHUNTERS,
+	492: types.UDP_HELIBORNE,
+	493: types.UDP_KINGOFGLORY,
+	494: types.UDP_ASSETTO_CORSA,
+	495: types.UDP_CACAOWEB,
+	496: types.UDP_ZALO_CALL,
+	497: types.UDP_PALADINS,
+	498: types.UDP_CHARGEN_EXPLOIT,
+	499: types.UDP_TOX,
+	500: types.UDP_HOLLA,
+	501: types.UDP_RRSHARE,
+	502: types.UDP_QQSPEEDMOBILE,
+	503: types.UDP_LOADOUT,
+	504: types.UDP_GANGLIA,
+	505: types.UDP_TALESRUNNER,
+	506: types.UDP_FREEFIRE,
+	507: types.UDP_HEROES_EVOLVED,
+	508: types.UDP_RULES_OF_SURVIVAL,
+	509: types.UDP_CONTRACT_WARS,
+	510: types.UDP_ARD,
+	511: types.UDP_QVOD,
+	512: types.UDP_YUANFUDAO,
+	513: types.UDP_ROCKET_LEAGUE,
+	514: types.UDP_CLOUDFLARE_WARP,
+	515: types.UDP_WIREGUARD,
+	516: types.UDP_COD_MOBILE,
+	517: types.UDP_NVIDIA_GAMESTREAM,
+	518: types.UDP_CLASSIN,
+	519: types.UDP_ARTCP,
+	520: types.REJECTION, /* All responses are 0x02 */
+	//521: types.MYSTERY_9000,	/* Occurs on tcp port 9000 */
+	//522: types.MYSTERY_PSPR,
+	//523: types.MYSTERY_8000,
+	//524: types.MYSTERY_IG,
+	//525: types.MYSTERY_CONN,
+	//526: types.MYSTERY_SYMANTEC,
+	//527: types.MYSTERY_RXXF,
+	//528: types.UDP_MYSTERY_0D,
+	//529: types.UDP_MYSTERY_99,
+	//530: types.UDP_MYSTERY_8000,
+	//531: types.UDP_MYSTERY_45,
+	//532: types.UDP_MYSTERY_0660,
+	//533: types.UDP_MYSTERY_E9,
+	//534: types.UDP_MYSTERY_QQ,
+	//535: types.UDP_MYSTERY_61_72,
+	//536: types.UDP_MYSTERY_05,
+	537: types.ICMP,
+	538: types.INVALID,
+	539: types.NO_PAYLOAD,
+	540: types.NO_FIRSTPKT,
+	541: types.UNSUPPORTED,
+	542: types.UNKNOWN,
 }
 
 // LPIWrapperName is the identification of the libprotoident library.
