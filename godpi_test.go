@@ -545,12 +545,26 @@ PERFORMANCE NOTES:
 			if classifyAllStr != "" {
 				classifyAllStr += ", "
 			}
+			// Deduplicate sources and optionally show counts
+			sourceCounts := make(map[types.ClassificationSource]int)
+			var uniqueSources []types.ClassificationSource
+			for _, source := range sources {
+				if sourceCounts[source] == 0 {
+					uniqueSources = append(uniqueSources, source)
+				}
+				sourceCounts[source]++
+			}
+
 			sourcesStr := ""
-			for i, source := range sources {
+			for i, source := range uniqueSources {
 				if i > 0 {
 					sourcesStr += "+"
 				}
 				sourcesStr += string(source)
+				// Show count only if there are multiple detections from the same framework
+				if sourceCounts[source] > 1 {
+					sourcesStr += fmt.Sprintf("×%d", sourceCounts[source])
+				}
 			}
 			classifyAllStr += fmt.Sprintf("%s(%s)", proto, sourcesStr)
 		}
@@ -594,9 +608,24 @@ PERFORMANCE NOTES:
 		t.Log(moduleLine)
 
 		for filename, protos := range fileMap {
-			protoStrs := make([]string, len(protos))
-			for i, p := range protos {
-				protoStrs[i] = string(p)
+			// Deduplicate protocols and count occurrences
+			protoCounts := make(map[types.Protocol]int)
+			var uniqueProtos []types.Protocol
+			for _, proto := range protos {
+				if protoCounts[proto] == 0 {
+					uniqueProtos = append(uniqueProtos, proto)
+				}
+				protoCounts[proto]++
+			}
+
+			// Build output string with counts
+			protoStrs := make([]string, len(uniqueProtos))
+			for i, proto := range uniqueProtos {
+				if protoCounts[proto] > 1 {
+					protoStrs[i] = fmt.Sprintf("%s×%d", proto, protoCounts[proto])
+				} else {
+					protoStrs[i] = string(proto)
+				}
 			}
 			detailLine := fmt.Sprintf("  %-30s: %s", filename, strings.Join(protoStrs, ", "))
 			output.WriteString(detailLine + "\n")
