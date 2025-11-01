@@ -51,32 +51,50 @@ extern int ndpiInitialize() {
   u_int32_t i;
   NDPI_PROTOCOL_BITMASK all;
 
+  //printf\("\[NDPI DEBUG\] ===== ndpiInitialize START =====\n");
+
   // init global detection structure
 
   set_ndpi_malloc(malloc);
   set_ndpi_free(free);
   
   // Initialize global context first
+  //printf("[NDPI DEBUG] Calling ndpi_global_init()...\n");
   ndpi_global_ctx = ndpi_global_init();
   if (ndpi_global_ctx == NULL) {
+      //fprintf(stderr, "[NDPI ERROR] ndpi_global_init() failed!\n");
       return -1;
   }
+  //printf("[NDPI DEBUG] ndpi_global_ctx = %p\n", (void*)ndpi_global_ctx);
   
+  //printf("[NDPI DEBUG] Calling ndpi_init_detection_module()...\n");
   ndpi_struct = ndpi_init_detection_module(ndpi_global_ctx);
 
   if (ndpi_struct == NULL) {
+    //  fprintf(stderr, "[NDPI ERROR] ndpi_init_detection_module() failed!\n");
       ndpi_global_deinit(ndpi_global_ctx);
       return -1;
   }
+  //printf("[NDPI DEBUG] ndpi_struct = %p\n", (void*)ndpi_struct);
   // enable all protocols
   NDPI_BITMASK_SET_ALL(all);
   ndpi_set_protocol_detection_bitmask2(ndpi_struct, &all);
 
   // allocate memory for flow tracking
   size_flow_struct = ndpi_detection_get_sizeof_ndpi_flow_struct();
+  //printf("[NDPI DEBUG] size_flow_struct = %u\n", size_flow_struct);
+  
+  if (size_flow_struct == 0) {
+    //fprintf(stderr, "[NDPI ERROR] ndpi_flow_struct size is 0!\n");
+    ndpi_exit_detection_module(ndpi_struct);
+    ndpi_global_deinit(ndpi_global_ctx);
+    return -1;
+  }
 
+  //printf\("\[NDPI DEBUG\] Calling ndpi_finalize_initialization()...\n");
   ndpi_finalize_initialization(ndpi_struct);
 
+  //printf("[NDPI DEBUG] ===== ndpiInitialize SUCCESS =====\n");
   return 0;
 }
 
@@ -92,11 +110,15 @@ static void ndpi_flow_freer(void *node) {
 
 extern void ndpiDestroy(void)
 {
+  //printf("[NDPI DEBUG] ===== ndpiDestroy START =====\n");
+  //printf("[NDPI DEBUG] ndpi_struct = %p\n", (void*)ndpi_struct);
   ndpi_exit_detection_module(ndpi_struct);
   if (ndpi_global_ctx != NULL) {
+    //printf("[NDPI DEBUG] Calling ndpi_global_deinit on %p\n", (void*)ndpi_global_ctx);
     ndpi_global_deinit(ndpi_global_ctx);
     ndpi_global_ctx = NULL;
   }
+  //printf("[NDPI DEBUG] ===== ndpiDestroy DONE =====\n");
 }
 
 static int node_cmp(const void *a, const void *b) {
@@ -184,7 +206,16 @@ static struct ndpi_flow *get_ndpi_flow(const struct pcap_pkthdr *header,
   newflow->first_packet_time_sec = header->ts.tv_sec;
   newflow->first_packet_time_usec = header->ts.tv_usec;
 
+  //printf\("\[NDPI DEBUG\] Allocating ndpi_flow with size %u\n", size_flow_struct);
   newflow->ndpi_flow = calloc(1, size_flow_struct);
+  
+  if (newflow->ndpi_flow == NULL) {
+    fprintf(stderr, "[NDPI ERROR] %s(2): failed to allocate ndpi_flow_struct (size=%u)\n", __FUNCTION__, size_flow_struct);
+    free(newflow);
+    return NULL;
+  }
+  
+  //printf\("\[NDPI DEBUG\] Successfully allocated ndpi_flow at %p\n", (void*)newflow->ndpi_flow);
 
   return newflow;
 }
@@ -197,10 +228,20 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
   u_int16_t protocol = 0;
   u_int16_t frag_off = ntohs(iph->frag_off);
 
+  //printf\("\[NDPI DEBUG\] packet_processing: flow=%p\n", (void*)flow);
+  
   if (flow != NULL) {
+    //printf\("\[NDPI DEBUG\] packet_processing: flow->ndpi_flow=%p\n", (void*)flow->ndpi_flow);
     ndpi_flow = flow->ndpi_flow;
+    
+    if (ndpi_flow == NULL) {
+      fprintf(stderr, "[NDPI ERROR] packet_processing: flow->ndpi_flow is NULL!\n");
+      return -ERR_NO_FLOW;
+    }
+    
     flow->packets++, flow->bytes += rawsize;
   } else {
+    fprintf(stderr, "[NDPI ERROR] packet_processing: flow is NULL!\n");
     return -ERR_NO_FLOW;
   }
 
@@ -239,10 +280,24 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
 extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *packet, void *flow)
 {
   const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
-  struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
   u_int64_t time;
   u_int16_t type, ip_offset;
+  struct ndpi_iphdr *iph;
+  
+  //printf\("\[NDPI DEBUG\] ndpiPacketProcess: header=%p, packet=%p, flow=%p\n", 
+  //       (void*)header, (void*)packet, flow);
+  
+  // Minimum required: Ethernet header + minimum IP header (20 bytes)
+  u_int16_t min_packet_size = sizeof(struct ndpi_ethhdr) + 20;
 
+  // Validate packet has minimum required data
+  if (header->caplen < min_packet_size) {
+    fprintf(stderr, "[NDPI ERROR] Packet too small: caplen=%u, min=%u\n", 
+            header->caplen, min_packet_size);
+    return -ERR_UNSPECIFIED;
+  }
+  
+  //printf\("\[NDPI DEBUG\] Packet caplen=%u, len=%u\n", header->caplen, header->len);
 
   time = ((uint64_t) header->ts.tv_sec) * detection_tick_resolution +
     header->ts.tv_usec / (1000000 / detection_tick_resolution);
@@ -250,14 +305,28 @@ extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *pac
   type = ethernet->h_proto;
 
   // just work on Ethernet packets that contain IP
-  if (type == htons(ETH_P_IP) && header->caplen >= sizeof(struct ndpi_ethhdr)) {
+  if (type == htons(ETH_P_IP)) {
+    ip_offset = sizeof(struct ndpi_ethhdr);
+    
+    // NOW it's safe to access IP header
+    iph = (struct ndpi_iphdr *) &packet[ip_offset];
+    
     u_int16_t frag_off = ntohs(iph->frag_off);
 
     if (iph->version != 4) {
       return -ERR_IPV6_NOT_SUPPORTED;
     }
 
-    ip_offset = sizeof(struct ndpi_ethhdr);
+    // Verify we have enough data for the complete IP header
+    u_int16_t ip_header_len = iph->ihl * 4;
+    if (header->caplen < ip_offset + ip_header_len) {
+      return -ERR_UNSPECIFIED;
+    }
+
+    // Prevent underflow
+    if (header->len < ip_offset) {
+      return -ERR_UNSPECIFIED;
+    }
 
     // process the packet
     return packet_processing(time, header, iph, header->len - ip_offset, header->len, (struct ndpi_flow*)flow);
@@ -267,21 +336,50 @@ extern int ndpiPacketProcess(const struct pcap_pkthdr *header, const u_char *pac
 
 extern void *ndpiGetFlow(const struct pcap_pkthdr *header, const u_char *packet) {
   const struct ndpi_ethhdr *ethernet = (struct ndpi_ethhdr *) packet;
-  struct ndpi_iphdr *iph = (struct ndpi_iphdr *) &packet[sizeof(struct ndpi_ethhdr)];
+  struct ndpi_iphdr *iph;
   u_int16_t type, ip_offset;
+  void *result;
+  
+  //printf\("\[NDPI DEBUG\] ndpiGetFlow: header=%p, packet=%p\n", (void*)header, (void*)packet);
+  
+  // Minimum required: Ethernet header + minimum IP header (20 bytes)
+  u_int16_t min_packet_size = sizeof(struct ndpi_ethhdr) + 20;
+
+  // Validate packet has minimum required data
+  if (header->caplen < min_packet_size) {
+    fprintf(stderr, "[NDPI ERROR] ndpiGetFlow: packet too small\n");
+    return NULL;
+  }
 
   type = ethernet->h_proto;
 
   // just work on Ethernet packets that contain IP
-  if (type == htons(ETH_P_IP) && header->caplen >= sizeof(struct ndpi_ethhdr) && iph->version == 4) {
+  if (type == htons(ETH_P_IP)) {
     ip_offset = sizeof(struct ndpi_ethhdr);
-    return get_ndpi_flow(header, iph, header->len - ip_offset);
+    
+    // NOW it's safe to access IP header
+    iph = (struct ndpi_iphdr *) &packet[ip_offset];
+    
+    if (iph->version == 4) {
+      // Prevent underflow
+      if (header->len >= ip_offset) {
+        result = get_ndpi_flow(header, iph, header->len - ip_offset);
+        //printf\("\[NDPI DEBUG\] ndpiGetFlow returning: %p\n", result);
+        return result;
+      }
+    }
   }
+  //printf\("\[NDPI DEBUG\] ndpiGetFlow returning: NULL\n");
   return NULL;
 }
 
 extern void ndpiFreeFlow(void *flow) {
-    free(flow);
+    //printf\("\[NDPI DEBUG\] ndpiFreeFlow: freeing flow %p\n", flow);
+    if (flow != NULL) {
+        free(flow);
+    } else {
+        fprintf(stderr, "[NDPI ERROR] ndpiFreeFlow: attempt to free NULL flow!\n");
+    }
 }
 
 #else

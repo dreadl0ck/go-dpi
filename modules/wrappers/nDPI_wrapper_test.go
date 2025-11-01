@@ -87,7 +87,9 @@ func TestNDPIWrapper_ClassifyFlowErrors(t *testing.T) {
 				return retVal
 			},
 			ndpiAllocFlow: func(gopacket.Packet) unsafe.Pointer {
-				return nil
+				// Return a non-nil pointer so that packet processing actually happens
+				// The actual value doesn't matter for these tests
+				return unsafe.Pointer(new(int))
 			},
 			ndpiFreeFlow: func(unsafe.Pointer) {
 			},

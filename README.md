@@ -41,6 +41,32 @@ result := godpi.ClassifyFlow(flow)
 
 This returns the protocol guessed by the classifiers as well as the source, e.g. go-dpi or one of the wrappers.
 
+**Note:** The classification process is deterministic and follows a strict priority order:
+
+1. **go-dpi classifiers** - Fast heuristic-based detection (tried first)
+2. **libprotoident (LPI)** - Lightweight payload inspection (tried second)
+3. **nDPI** - Deep packet inspection (tried last)
+
+Modules are evaluated sequentially in this order, and the first successful match is returned. This ensures reproducible and predictable results across multiple runs, even when multiple classifiers could potentially match the same flow. The priority order is maintained regardless of which modules are enabled.
+
+**Caching:** Classification results are cached in the flow object. Once a flow is successfully classified, subsequent calls to `ClassifyFlow()` return the cached result immediately without re-running classification modules. This optimization is transparent and ensures efficient processing of multiple packets from the same flow.
+
+### Advanced: Getting All Detection Results
+
+If you want to see what all detection engines report for a flow (useful for debugging or analysis), use:
+
+```go
+results := godpi.ClassifyFlowAllModules(flow)
+```
+
+This function:
+- Runs **all** activated modules sequentially in the same priority order
+- Returns all successful classifications from all modules
+- **Deduplicates** results by protocol (if multiple modules detect the same protocol, only the first detection is included)
+- Ensures deterministic ordering based on module priority
+
+This is useful when you want to compare detection results across different engines or understand what protocols multiple modules are detecting.
+
 Finally, once you are done with the library, you should free the used resources by calling:
 
 ```go

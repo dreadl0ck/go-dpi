@@ -6,6 +6,7 @@ package wrappers
 // #include "nDPI_wrapper_impl.h"
 import "C"
 import (
+	"sync"
 	"unsafe"
 
 	"github.com/dreadl0ck/go-dpi/types"
@@ -505,6 +506,7 @@ type NDPIWrapperProvider struct {
 // providing the methods used to interface with it from go-dpi.
 type NDPIWrapper struct {
 	provider *NDPIWrapperProvider
+	mu       sync.Mutex // Protects concurrent access to nDPI C library (not thread-safe)
 }
 
 // getPacketNdpiData is a helper that extracts the PCAP packet header and packet
@@ -602,6 +604,11 @@ func (wrapper *NDPIWrapper) ClassifyFlow(flow *types.Flow) (class *types.Classif
 		if firstPacketWithData == nil {
 			return
 		}
+
+		// Lock mutex to protect concurrent access to nDPI C library
+		// The nDPI library uses global state and is not thread-safe
+		wrapper.mu.Lock()
+		defer wrapper.mu.Unlock()
 
 		ndpiFlow := (*wrapper.provider).ndpiAllocFlow(firstPacketWithData)
 		// Check if flow allocation failed (can happen if packet has no valid data)

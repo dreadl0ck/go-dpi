@@ -120,10 +120,25 @@ func getPcapDumpProtoMap(filename string) (result map[types.Protocol]int) {
 	if err != nil {
 		return
 	}
+
+	// First pass: collect all packets into flows
+	flowSet := make(map[*types.Flow]bool)
 	for packet := range packets {
 		flow, _ := types.GetFlowForPacket(packet)
-		if flow.GetClassificationResult().Protocol == types.Unknown {
-			res := module.ClassifyFlow(flow)
+
+		// Only track flows with valid network layer
+		// (transport layer is optional, e.g., ICMP doesn't have one)
+		if packet.NetworkLayer() != nil {
+			flowSet[flow] = true
+		}
+	}
+
+	// Second pass: classify each flow after all packets have been collected
+	// This ensures flows have enough packets for accurate classification.
+	// ClassifyFlow now runs deterministically, ensuring reproducible test results.
+	for flow := range flowSet {
+		res := module.ClassifyFlow(flow)
+		if res.Protocol != types.Unknown {
 			result[res.Protocol]++
 		}
 	}
@@ -141,9 +156,9 @@ func TestClassifiers(t *testing.T) {
 	defer types.DestroyCache()
 	// test for each protocol the expected number of flows in the appropriate capture file
 	protocolInfos := []protocolTestInfo{
+		{types.DNS, "../../godpi_example/dumps/dns.pcapng", 5},
 		{types.HTTP, "../../godpi_example/dumps/http.cap", 2},
-		{types.DNS, "../../godpi_example/dumps/dns+icmp.pcapng", 5},
-		{types.ICMP, "../../godpi_example/dumps/dns+icmp.pcapng", 22},
+		{types.ICMP, "../../godpi_example/dumps/dns.pcapng", 22},
 		{types.ICMP, "../../godpi_example/dumps/icmpv6.pcap", 49},
 		{types.NetBIOS, "../../godpi_example/dumps/netbios.pcap", 12},
 		{types.RDP, "../../godpi_example/dumps/rdp.pcap", 2},

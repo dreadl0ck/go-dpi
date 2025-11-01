@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 
+	"github.com/dreadl0ck/go-dpi/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/dreadl0ck/go-dpi/types"
 )
 
 // NetBIOSClassifier struct
@@ -32,7 +32,7 @@ func checkUDPNetBIOSWrapper(isFirstPktBroadcast *bool) func([]byte, []gopacket.P
 			return false
 		}
 		// we only detect queries with one question
-		hasOneQuestion := bytes.Compare(payload[4:12], []byte{0, 1, 0, 0, 0, 0, 0, 0}) == 0
+		hasOneQuestion := bytes.Equal(payload[4:12], []byte{0, 1, 0, 0, 0, 0, 0, 0})
 		// check if the question is a broadcast packet
 		isBcastNQ := *isFirstPktBroadcast && payload[2] == 1 && payload[3] == 0x10
 		// check if the question is a stat query packet

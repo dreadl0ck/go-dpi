@@ -45,7 +45,7 @@ const (
 
 	// MinPacketsForClassification is the minimum number of packets required
 	// before attempting to classify a flow.
-	MinPacketsForClassification = 10
+	MinPacketsForClassification = 1
 )
 
 // Flow contains sufficient information to classify a flow.
@@ -71,45 +71,19 @@ func CreateFlowFromPacket(packet gopacket.Packet) (flow *Flow) {
 }
 
 // AddPacket adds a new packet to the flow.
-// When storing a packet, it creates a copy of the packet data to prevent
-// issues with buffer reuse in packet capture scenarios where the underlying
-// data buffer may be reused for subsequent packets.
+// Stores the exact packet provided without copying.
 func (flow *Flow) AddPacket(packet gopacket.Packet) {
 	flow.mtx.Lock()
 	defer flow.mtx.Unlock()
-	
+
 	// Only store packets up to MaxPacketsPerFlow
 	if flow.numPackets < MaxPacketsPerFlow {
-		// Copy the packet data to prevent buffer reuse issues.
-		// This is critical when processing packets from live capture or
-		// when using gopacket with NoCopy mode, where the underlying buffer
-		// may be reused for subsequent packets.
-		packetData := packet.Data()
-		if len(packetData) > 0 {
-			// Create a copy of the packet data
-			copiedData := make([]byte, len(packetData))
-			copy(copiedData, packetData)
-			
-			// Create a new packet from the copied data
-			// Use the first layer's type as the decode option
-			if len(packet.Layers()) > 0 {
-				copiedPacket := gopacket.NewPacket(copiedData, packet.Layers()[0].LayerType(), gopacket.Default)
-				flow.packets = append(flow.packets, copiedPacket)
-			} else {
-				// Fallback: store the original packet if we can't determine layer type
-				flow.packets = append(flow.packets, packet)
-			}
-		} else {
-			// If packet has no data, store it as-is
-			flow.packets = append(flow.packets, packet)
-		}
+		flow.packets = append(flow.packets, packet)
 		flow.numPackets++
 	}
-	// If flow is already full (numPackets >= MaxPacketsPerFlow),
-	// we don't store the packet and don't need to copy its data
 }
 
-// AddPacket adds a new packet to the flow.
+// GetDirection returns the direction of the packet relative to the first packet in the flow.
 func (flow *Flow) GetDirection(packet gopacket.Packet) int {
 	flow.mtx.Lock()
 	defer flow.mtx.Unlock()
@@ -161,8 +135,20 @@ func (flow *Flow) GetClassificationResult() (result ClassificationResult) {
 
 // endpointStrFromFlows creates a string that identifies a flow from the
 // network and transport flows of a packet.
+// Returns empty string if the flow endpoints are invalid.
 func endpointStrFromFlows(networkFlow, transportFlow gopacket.Flow) string {
+	// Validate that flows have valid data
+	if networkFlow.EndpointType() == 0 || transportFlow.EndpointType() == 0 {
+		return ""
+	}
+
 	srcEp, dstEp := transportFlow.Endpoints()
+
+	// Verify endpoints have valid data (non-zero length)
+	if len(srcEp.Raw()) == 0 || len(dstEp.Raw()) == 0 {
+		return ""
+	}
+
 	// require a consistent ordering between the endpoints so that packets
 	// that go in either direction in the flow will map to the same element
 	// in the flowTracker map
@@ -186,6 +172,13 @@ func GetFlowForPacket(packet gopacket.Packet) (flow *Flow, isNew bool) {
 		gpktNetworkFlow := network.NetworkFlow()
 		gpktTransportFlow := transport.TransportFlow()
 		flowStr := endpointStrFromFlows(gpktNetworkFlow, gpktTransportFlow)
+
+		// If flowStr is empty, the packet has invalid flow data - fall back to creating a flow
+		if flowStr == "" {
+			flow = CreateFlowFromPacket(packet)
+			return
+		}
+
 		// Lock is necessary for the compound check-then-act operation
 		// to prevent race conditions when multiple goroutines process
 		// packets from the same flow simultaneously

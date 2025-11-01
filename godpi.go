@@ -2,8 +2,6 @@
 package godpi
 
 import (
-	"context"
-	"sync"
 	"time"
 
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
@@ -13,6 +11,11 @@ import (
 )
 
 var activatedModules []types.Module
+
+// moduleList contains all available modules in priority order.
+// Classification tries modules sequentially in this order:
+//  1. go-dpi classifiers (fast heuristic-based detection)
+//  2. Wrappers (LPI and nDPI, in that order)
 var moduleList = []types.Module{
 	classifiers.NewClassifierModule(),
 	wrappers.NewWrapperModule(),
@@ -68,7 +71,15 @@ func Destroy() (errs []error) {
 	return
 }
 
-// SetModules selects the modules to be used by the library and their order.
+// SetModules selects the modules to be used by the library and their priority order.
+// Modules are tried sequentially in the order provided, with the first successful
+// classification being returned.
+//
+// Recommended order for optimal performance:
+//  1. go-dpi classifiers (fast heuristic-based)
+//  2. libprotoident/LPI (lightweight)
+//  3. nDPI (comprehensive but slower)
+//
 // After calling this method, Initialize should be called, in order to
 // initialize any new modules. If Initialize has already been called before,
 // Destroy should be called as well before Initialize.
@@ -98,9 +109,24 @@ func GetPacketFlow(packet gopacket.Packet) (*types.Flow, bool) {
 }
 
 // ClassifyFlow takes a Flow and tries to classify it with all of the activated
-// modules concurrently, until one of them manages to classify it. It returns
-// the detected protocol as well as the source that made the classification.
+// modules sequentially in priority order, until one of them successfully classifies it.
+// It returns the detected protocol as well as the source that made the classification.
 // If no classification is made, the protocol Unknown is returned.
+//
+// Module Priority Order (first match wins):
+//  1. go-dpi classifiers (fast heuristic-based detection)
+//  2. libprotoident/LPI (lightweight payload inspection)
+//  3. nDPI (deep packet inspection)
+//
+// This priority order is maintained regardless of which modules are enabled.
+// Each module internally runs its classifiers deterministically to ensure
+// reproducible results across multiple runs.
+//
+// Caching: Once a flow is successfully classified, the result is cached in the
+// flow object. Subsequent calls to ClassifyFlow on the same flow will return
+// the cached result immediately without re-running any classification modules.
+// This ensures optimal performance when processing multiple packets from the
+// same flow.
 func ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 	if len(activatedModules) == 0 {
 		return
@@ -116,50 +142,32 @@ func ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	resultChan := make(chan types.ClassificationResult, len(activatedModules))
-	var wg sync.WaitGroup
-
-	// Launch a goroutine for each module
+	// Try each module sequentially in priority order until one succeeds
 	for _, module := range activatedModules {
-		wg.Add(1)
-		go func(m types.Module) {
-			defer wg.Done()
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				resultTmp := m.ClassifyFlow(flow)
-				if resultTmp.Protocol != types.Unknown {
-					select {
-					case resultChan <- resultTmp:
-					case <-ctx.Done():
-					}
-				}
-			}
-		}(module)
-	}
-
-	// Close channel when all goroutines complete
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	// Wait for first successful result or all modules to complete
-	for res := range resultChan {
-		cancel() // Stop other goroutines
-		return res
+		result = module.ClassifyFlow(flow)
+		if result.Protocol != types.Unknown {
+			return result
+		}
 	}
 
 	return
 }
 
 // ClassifyFlowAllModules takes a Flow and tries to classify it with all of the
-// activated modules concurrently. As opposed to ClassifyFlow, it will return all
-// of the results returned from the modules, not only the first successful one.
+// activated modules sequentially in priority order. Unlike ClassifyFlow, this
+// function runs all modules and returns all their classification results.
+//
+// The modules are executed in the same priority order as ClassifyFlow:
+//  1. go-dpi classifiers
+//  2. libprotoident/LPI
+//  3. nDPI
+//
+// Results are deduplicated by protocol - if multiple modules detect the same
+// protocol, only the first detection (from the higher priority module) is included
+// in the results.
+//
+// This function is useful for debugging, analysis, or when you want to see what
+// multiple detection engines report for the same flow.
 func ClassifyFlowAllModules(flow *types.Flow) (results []types.ClassificationResult) {
 	if len(activatedModules) == 0 {
 		return
@@ -175,26 +183,21 @@ func ClassifyFlowAllModules(flow *types.Flow) (results []types.ClassificationRes
 		return
 	}
 
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	// Track which protocols we've already detected for deduplication
+	seenProtocols := make(map[types.Protocol]bool)
 
-	// Launch a goroutine for each module
+	// Try each module sequentially in priority order
 	for _, module := range activatedModules {
-		wg.Add(1)
-		go func(m types.Module) {
-			defer wg.Done()
-			resultsTmp := m.ClassifyFlowAll(flow)
+		resultsTmp := module.ClassifyFlowAll(flow)
 
-			mu.Lock()
-			for _, resultTmp := range resultsTmp {
-				if resultTmp.Protocol != types.Unknown {
-					results = append(results, resultTmp)
-				}
+		// Add results, deduplicating by protocol
+		for _, resultTmp := range resultsTmp {
+			if resultTmp.Protocol != types.Unknown && !seenProtocols[resultTmp.Protocol] {
+				seenProtocols[resultTmp.Protocol] = true
+				results = append(results, resultTmp)
 			}
-			mu.Unlock()
-		}(module)
+		}
 	}
 
-	wg.Wait()
 	return
 }

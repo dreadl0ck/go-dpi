@@ -14,5 +14,6 @@ func ReadDumpFile(filename string) (<-chan gopacket.Packet, error) {
 		return nil, err
 	}
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+	packetSource.DecodeOptions = gopacket.Default
 	return packetSource.Packets(), nil
 }

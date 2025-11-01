@@ -3,7 +3,6 @@
 package classifiers
 
 import (
-	"context"
 	"sync"
 
 	"github.com/dreadl0ck/go-dpi/types"
@@ -36,12 +35,18 @@ type HeuristicClassifier interface {
 
 // ClassifierModuleConfig is given to the module's ConfigureModule method, in
 // order to set which classifiers are active and their order.
+// The order of classifiers matters: ClassifyFlow will return the first matching
+// classifier's result.
 type ClassifierModuleConfig struct {
 	Classifiers []GenericClassifier
 }
 
 // NewClassifierModule returns a new ClassifierModule with the default
 // configuration. By default, all classifiers are active.
+//
+// The order of classifiers in the list defines their priority: when multiple
+// classifiers could match the same flow, ClassifyFlow returns the first match.
+// This ensures deterministic and reproducible classification results.
 func NewClassifierModule() *ClassifierModule {
 	module := &ClassifierModule{}
 	module.classifierList = []GenericClassifier{
@@ -72,59 +77,37 @@ func (module *ClassifierModule) Destroy() error {
 	return nil
 }
 
-// ClassifyFlow applies all the classifiers to a flow concurrently and returns the protocol
-// that is detected by a classifier if there is one. Otherwise the returned
-// protocol is Unknown.
+// ClassifyFlow applies all the classifiers to a flow sequentially in the order
+// they appear in the classifier list, and returns the protocol detected by the
+// first matching classifier. If no classifier matches, the returned protocol is Unknown.
+//
+// This method runs classifiers deterministically (not concurrently) to ensure:
+//   - Reproducible results across multiple runs
+//   - Predictable behavior when multiple classifiers could match the same flow
+//   - Priority-based classification based on classifier order
+//
+// The classifier order in NewClassifierModule defines the priority when multiple
+// protocols could match the same flow.
 func (module *ClassifierModule) ClassifyFlow(flow *types.Flow) (result types.ClassificationResult) {
 	if len(module.classifierList) == 0 {
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	resultChan := make(chan types.ClassificationResult, len(module.classifierList))
-	var wg sync.WaitGroup
-
-	// Launch a goroutine for each classifier
+	// Run each classifier sequentially in order until one matches
 	for _, classifier := range module.classifierList {
 		if heuristic, ok := classifier.(HeuristicClassifier); ok {
-			wg.Add(1)
-			go func(h HeuristicClassifier, c GenericClassifier) {
-				defer wg.Done()
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					if h.HeuristicClassify(flow) {
-						res := types.ClassificationResult{
-							Protocol: c.GetProtocol(),
-							Source:   GoDPIName,
-						}
-						select {
-						case resultChan <- res:
-						case <-ctx.Done():
-						}
-					}
+			if heuristic.HeuristicClassify(flow) {
+				result = types.ClassificationResult{
+					Protocol: classifier.GetProtocol(),
+					Source:   GoDPIName,
 				}
-			}(heuristic, classifier)
+				flow.SetClassificationResult(result.Protocol, result.Source)
+				return
+			}
 		}
 	}
 
-	// Close channel when all goroutines complete
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	// Wait for first successful result or all classifiers to complete
-	for res := range resultChan {
-		result = res
-		flow.SetClassificationResult(result.Protocol, result.Source)
-		cancel() // Stop other goroutines
-		return
-	}
-
+	// No classifier matched
 	return
 }
 

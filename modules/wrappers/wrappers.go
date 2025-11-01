@@ -44,6 +44,13 @@ const errorLibraryDisabled = -0x1000
 
 // NewWrapperModule returns a new WrapperModule with the default configuration.
 // By default, all wrappers will be enabled.
+//
+// Wrappers are tried in priority order:
+//   1. LPI (libprotoident) - lightweight, fast payload inspection
+//   2. nDPI - comprehensive deep packet inspection
+//
+// This order is maintained when ClassifyFlow is called, with the first
+// successful classification being returned.
 func NewWrapperModule() *WrapperModule {
 	module := &WrapperModule{}
 	module.activeWrappers = make([]Wrapper, 0)

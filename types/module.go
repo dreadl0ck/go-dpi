@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"path"
+	"strings"
 )
 
 // Module is implemented by every classification module provided by the
@@ -29,9 +30,25 @@ func BenchmarkModule(dumpsDir string, module Module, times int) error {
 	defer DestroyCache()
 	module.Initialize()
 	defer module.Destroy()
+	
+	// Track if we found any valid PCAP files to process
+	foundPcapFiles := false
+	
 	for i := 0; i < times; i++ {
 		// gather all flows in all files
 		for _, fInfo := range files {
+			if fInfo.IsDir() {
+				continue
+			}
+			
+			// Skip non-PCAP files (like .DS_Store, etc.)
+			fileName := fInfo.Name()
+			if !strings.HasSuffix(fileName, ".pcap") && !strings.HasSuffix(fileName, ".pcapng") && !strings.HasSuffix(fileName, ".cap") {
+				continue
+			}
+			
+			foundPcapFiles = true
+			
 			filePath := path.Join(dumpsDir, fInfo.Name())
 			dumpPackets, err := utils.ReadDumpFile(filePath)
 			if err != nil {
@@ -45,6 +62,11 @@ func BenchmarkModule(dumpsDir string, module Module, times int) error {
 			}
 		}
 	}
+	
+	if !foundPcapFiles {
+		return errors.New("no PCAP files found in directory")
+	}
+	
 	return nil
 }
 
@@ -78,11 +100,14 @@ func (module *MockModule) Destroy() error {
 }
 
 // ClassifyFlow logs the classification by the mock module.
+// It properly caches the result just like real modules do.
 func (module *MockModule) ClassifyFlow(flow *Flow) (result ClassificationResult) {
 	module.ClassifyCalled++
 	result.Source = ClassificationSource(module.SourceName)
 	if module.ClassifySuccess {
 		result.Protocol = HTTP
+		// Cache the successful classification result, just like real modules
+		flow.SetClassificationResult(result.Protocol, result.Source)
 	} else {
 		result.Protocol = Unknown
 	}
