@@ -17,9 +17,10 @@ func (classifier DNSClassifier) HeuristicClassify(flow *types.Flow) bool {
 				detected = false
 			}
 		}()
-		layerParser := gopacket.DecodingLayerParser{}
 		dns := layers.DNS{}
-		err := dns.DecodeFromBytes(layer.LayerPayload(), &layerParser)
+		// Decode directly using DNS layer's DecodeFromBytes
+		// Pass nil as the decoder since we're not using a DecodingLayerParser
+		err := dns.DecodeFromBytes(layer.LayerPayload(), gopacket.NilDecodeFeedback)
 		// attempt to decode layer as DNS packet using gopacket and return
 		// whether it was successful
 		detected = err == nil

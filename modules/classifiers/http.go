@@ -28,7 +28,8 @@ var regex *regexp.Regexp
 func init() {
 	var regexStr = "^(" + strings.Join(httpVerbs, "|") + ") [^\\s]+ " +
 		"HTTP/[12](.[01])?\r\n(.*\r\n)*\r\n"
-	// regex should match the first line of all HTTP requests
+	// regex should match the first line of HTTP/1.x and HTTP/2.x requests
+	// Note: HTTP/3 uses QUIC protocol and has a different structure (not detected by this classifier)
 	regex, _ = regexp.Compile(regexStr)
 }
 

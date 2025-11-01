@@ -17,9 +17,11 @@ func (classifier SMBClassifier) HeuristicClassify(flow *types.Flow) bool {
 	return checkFirstPayload(flow.GetPackets(), layers.LayerTypeTCP,
 		func(payload []byte, packetsRest []gopacket.Packet) bool {
 			// skip netbios layer if it exists
+			// NetBIOS session header: 1 byte type + 3 bytes length (24-bit big-endian)
 			if len(payload) > 4 && payload[0] == 0 {
-				netbiosLen := binary.BigEndian.Uint32(payload[:4])
-				if int(netbiosLen) == len(payload[4:]) {
+				// Extract 24-bit length from bytes 1-3 (ignoring the flags in the high bits)
+				netbiosLen := int(payload[1])<<16 | int(payload[2])<<8 | int(payload[3])
+				if netbiosLen == len(payload[4:]) {
 					payload = payload[4:]
 				}
 			}

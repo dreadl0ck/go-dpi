@@ -16,10 +16,20 @@ func (classifier SMTPClassifier) HeuristicClassify(flow *types.Flow) bool {
 	return checkFirstPayload(flow.GetPackets(), layers.LayerTypeTCP,
 		func(payload []byte, packetsRest []gopacket.Packet) bool {
 			payloadStr := string(payload)
+			hasValid220 := false
 			for _, line := range strings.Split(payloadStr, "\n") {
-				if len(line) > 0 && !strings.HasPrefix(line, "220") {
-					return false
+				if len(line) > 0 {
+					if strings.HasPrefix(line, "220") {
+						hasValid220 = true
+					} else {
+						// Non-220 line found, not SMTP
+						return false
+					}
 				}
+			}
+			// Must have at least one valid 220 line
+			if !hasValid220 {
+				return false
 			}
 			return checkFirstPayload(packetsRest, layers.LayerTypeTCP,
 				func(payload []byte, _ []gopacket.Packet) bool {

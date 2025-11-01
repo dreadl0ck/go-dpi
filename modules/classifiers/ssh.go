@@ -16,9 +16,13 @@ func (classifier SSHClassifier) HeuristicClassify(flow *types.Flow) bool {
 	return checkFirstPayload(flow.GetPackets(), layers.LayerTypeTCP,
 		func(payload []byte, _ []gopacket.Packet) bool {
 			payloadStr := string(payload)
-			hasSuffix := strings.HasSuffix(payloadStr, "\n")
-			hasSSHStr := strings.HasPrefix(payloadStr, "SSH") || strings.Contains(payloadStr, "OpenSSH")
-			return hasSuffix && hasSSHStr
+			// SSH banner must end with newline
+			if !strings.HasSuffix(payloadStr, "\n") {
+				return false
+			}
+			// SSH banner format: "SSH-protoversion-softwareversion SP comments CR LF"
+			// Must start with "SSH-" followed by version (e.g., "SSH-2.0-OpenSSH_7.4")
+			return strings.HasPrefix(payloadStr, "SSH-")
 		})
 }
 

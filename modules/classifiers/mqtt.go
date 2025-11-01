@@ -20,7 +20,7 @@ func (classifier MQTTClassifier) HeuristicClassify(flow *types.Flow) bool {
 			}
 			//check Control packet (connect)
 			if len(payload) < 6 {
-				// at least 6 packets
+				// at least 6 bytes required for MQTT CONNECT packet
 				// 0x10 0x04 0x00 0x00 M Q
 				return false
 			}
