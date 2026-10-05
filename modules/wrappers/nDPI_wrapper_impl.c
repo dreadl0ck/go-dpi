@@ -99,7 +99,7 @@ extern int ndpiInitialize() {
 }
 
 static void free_ndpi_flow(struct ndpi_flow *flow) {
-  if(flow->ndpi_flow) { ndpi_free(flow->ndpi_flow); flow->ndpi_flow = NULL; }
+  if(flow->ndpi_flow) { ndpi_free_flow(flow->ndpi_flow); flow->ndpi_flow = NULL; }
 }
 
 static void ndpi_flow_freer(void *node) {
@@ -112,7 +112,10 @@ extern void ndpiDestroy(void)
 {
   //printf("[NDPI DEBUG] ===== ndpiDestroy START =====\n");
   //printf("[NDPI DEBUG] ndpi_struct = %p\n", (void*)ndpi_struct);
-  ndpi_exit_detection_module(ndpi_struct);
+  if (ndpi_struct != NULL) {
+    ndpi_exit_detection_module(ndpi_struct);
+    ndpi_struct = NULL;
+  }
   if (ndpi_global_ctx != NULL) {
     //printf("[NDPI DEBUG] Calling ndpi_global_deinit on %p\n", (void*)ndpi_global_ctx);
     ndpi_global_deinit(ndpi_global_ctx);
@@ -231,6 +234,7 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
   //printf\("\[NDPI DEBUG\] packet_processing: flow=%p\n", (void*)flow);
   
   if (flow != NULL) {
+    if(flow->detection_completed) return flow->detected_protocol;
     //printf\("\[NDPI DEBUG\] packet_processing: flow->ndpi_flow=%p\n", (void*)flow->ndpi_flow);
     ndpi_flow = flow->ndpi_flow;
     
@@ -244,8 +248,6 @@ static int packet_processing(const u_int64_t time, const struct pcap_pkthdr *hea
     fprintf(stderr, "[NDPI ERROR] packet_processing: flow is NULL!\n");
     return -ERR_NO_FLOW;
   }
-
-  if(flow->detection_completed) return flow->detected_protocol;
 
   // only handle unfragmented packets
   if ((frag_off & 0x3FFF) == 0) {
@@ -376,6 +378,7 @@ extern void *ndpiGetFlow(const struct pcap_pkthdr *header, const u_char *packet)
 extern void ndpiFreeFlow(void *flow) {
     //printf\("\[NDPI DEBUG\] ndpiFreeFlow: freeing flow %p\n", flow);
     if (flow != NULL) {
+        free_ndpi_flow((struct ndpi_flow*)flow);
         free(flow);
     } else {
         fprintf(stderr, "[NDPI ERROR] ndpiFreeFlow: attempt to free NULL flow!\n");

@@ -5,6 +5,7 @@
 #ifndef DISABLE_LPI
 
 #include <iostream>
+#include <cstdlib>
 #include <libprotoident.h>
 #include <libprotoident.h>
 #include <libtrace.h>
@@ -52,7 +53,8 @@ int lpiAddPacketToFlow(lpi_data_t *data, const void *pktData, unsigned short pkt
 extern "C"
 lpiResult *lpiGuessProtocol(lpi_data_t *data) {
     // Try to classify a flow
-    struct lpiResult* res = new lpiResult;
+    struct lpiResult* res = (struct lpiResult*)malloc(sizeof(struct lpiResult));
+    if (!res) return NULL;
     lpi_module_t *mod = lpi_guess_protocol(data);
     res->proto = mod->protocol;
     res->category = mod->category;

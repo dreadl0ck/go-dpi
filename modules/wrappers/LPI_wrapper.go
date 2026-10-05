@@ -9,6 +9,7 @@ package wrappers
 // #include <stdlib.h>
 import "C"
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/dreadl0ck/go-dpi/types"
@@ -618,7 +619,7 @@ const LPIWrapperName = "libprotoident"
 
 // LPIWrapper is the wrapper for the LPI protocol identification library,
 // providing the methods used to interface with it from go-dpi.
-type LPIWrapper struct{}
+type LPIWrapper struct{ initialized bool }
 
 // NewLPIWrapper constructs a new LPIWrapper.
 func NewLPIWrapper() *LPIWrapper {
@@ -627,18 +628,43 @@ func NewLPIWrapper() *LPIWrapper {
 
 // InitializeWrapper initializes the libprotoident wrapper.
 func (wrapper *LPIWrapper) InitializeWrapper() int {
-	return int(C.lpiInitLibrary())
+	incrementalLPI.Lock()
+	defer incrementalLPI.Unlock()
+	if wrapper.initialized {
+		return 0
+	}
+	if incrementalLPI.users == 0 {
+		if code := int(C.lpiInitLibrary()); code != 0 {
+			return code
+		}
+	}
+	incrementalLPI.users++
+	wrapper.initialized = true
+	return 0
 }
 
 // DestroyWrapper destroys the libprotoident wrapper.
 func (wrapper *LPIWrapper) DestroyWrapper() error {
-	C.lpiDestroyLibrary()
+	incrementalLPI.Lock()
+	defer incrementalLPI.Unlock()
+	if wrapper.initialized {
+		incrementalLPI.users--
+		if incrementalLPI.users == 0 {
+			C.lpiDestroyLibrary()
+		}
+		wrapper.initialized = false
+	}
 	return nil
 }
 
 // ClassifyFlow classifies a flow using the libprotoident library. It returns
 // the detected protocol and any error.
 func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification, error) {
+	incrementalLPI.RLock()
+	defer incrementalLPI.RUnlock()
+	if !wrapper.initialized {
+		return nil, fmt.Errorf("libprotoident is not initialized")
+	}
 	lpiFlow := C.lpiCreateFlow()
 	defer C.lpiFreeFlow(lpiFlow)
 	for _, packet := range flow.GetPackets() {
@@ -651,6 +677,9 @@ func (wrapper *LPIWrapper) ClassifyFlow(flow *types.Flow) (*types.Classification
 		C.lpiAddPacketToFlow(lpiFlow, dataPtr, C.ushort(len(pktData)), C.int(flow.GetDirection(packet)))
 	}
 	lpiResult := (*C.struct_lpiResult)(unsafe.Pointer(C.lpiGuessProtocol(lpiFlow)))
+	if lpiResult == nil {
+		return nil, fmt.Errorf("libprotoident result allocation failed")
+	}
 	defer C.free(unsafe.Pointer(lpiResult))
 
 	protoCode := uint32(lpiResult.proto)

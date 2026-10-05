@@ -575,11 +575,15 @@ func NewNDPIWrapper() *NDPIWrapper {
 
 // InitializeWrapper initializes the nDPI wrapper.
 func (wrapper *NDPIWrapper) InitializeWrapper() int {
+	incrementalNDPI.Lock()
+	defer incrementalNDPI.Unlock()
 	return int((*wrapper.provider).ndpiInitialize())
 }
 
 // DestroyWrapper destroys the nDPI wrapper.
 func (wrapper *NDPIWrapper) DestroyWrapper() error {
+	incrementalNDPI.Lock()
+	defer incrementalNDPI.Unlock()
 	(*wrapper.provider).ndpiDestroy()
 	return nil
 }
