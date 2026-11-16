@@ -1,10 +1,7 @@
 package wrappers
 
 // #include "wrappers_config.h"
-// #ifndef DISABLE_LPI
-// #cgo CXXFLAGS: -std=c++11 -I/usr/local/include -I/opt/homebrew/include
-// #cgo LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -lprotoident -ltrace
-// #endif
+// #cgo CXXFLAGS: -std=c++11
 // #include "LPI_wrapper_impl.hpp"
 // #include <stdlib.h>
 import "C"

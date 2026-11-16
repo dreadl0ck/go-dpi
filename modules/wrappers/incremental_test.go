@@ -75,6 +75,9 @@ func TestIncrementalDetectionAndOwnership(t *testing.T) {
 		t.Fatal("detected native state retained")
 	}
 	worker.Free(&flow)
+	if !HasLPISupport {
+		return
+	}
 	legacy := NewLPIWrapper()
 	if legacy.InitializeWrapper() != 0 {
 		t.Fatal("legacy LPI initialization failed")

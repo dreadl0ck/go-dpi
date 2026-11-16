@@ -1,6 +1,6 @@
 #include <pcap.h>
 #ifndef DISABLE_NDPI
-#include <ndpi/ndpi_main.h>
+#include <ndpi_main.h>
 #endif
 
 #ifdef __cplusplus

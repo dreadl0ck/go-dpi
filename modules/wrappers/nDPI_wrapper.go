@@ -1,8 +1,8 @@
 package wrappers
 
 // #include "wrappers_config.h"
-// #cgo CFLAGS: -I/usr/local/include/ -I/opt/homebrew/include/
-// #cgo LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -lndpi -lm -pthread
+// #cgo pkg-config: libndpi
+// #cgo LDFLAGS: -lm -pthread
 // #include "nDPI_wrapper_impl.h"
 import "C"
 import (

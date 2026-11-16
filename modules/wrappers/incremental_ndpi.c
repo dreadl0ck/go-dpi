@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifndef DISABLE_NDPI
-#include <ndpi/ndpi_api.h>
+#include <ndpi_api.h>
 
 typedef struct {
     struct ndpi_global_context *global;

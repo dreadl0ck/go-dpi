@@ -1,4 +1,5 @@
 #include "incremental.h"
+#include <stddef.h>
 #include "wrappers_config.h"
 #ifndef DISABLE_LPI
 #include <libprotoident.h>

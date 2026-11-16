@@ -11,7 +11,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <netinet/in.h>
+#endif
 #include <search.h>
 #include <signal.h>
 

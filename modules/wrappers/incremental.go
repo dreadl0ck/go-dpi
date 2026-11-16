@@ -40,6 +40,7 @@ var incrementalNDPI sync.Mutex
 
 // NewIncrementalWorker creates private nDPI and libtrace contexts for the enabled engines.
 func NewIncrementalWorker(ndpi, lpi bool) (*IncrementalWorker, error) {
+	lpi = lpi && HasLPISupport
 	w := &IncrementalWorker{lpi: lpi}
 	if lpi {
 		incrementalLPI.Lock()

@@ -1,3 +1,5 @@
+//go:build !nolpi
+
 package wrappers
 
 import (
