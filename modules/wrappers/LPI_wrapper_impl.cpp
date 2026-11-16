@@ -70,7 +70,7 @@ void lpiDestroyLibrary() {
 #else
 // LPI is disabled, so initialization fails
 
-typedef void lpi_data_t;
+#include "LPI_wrapper_impl.hpp"
 
 extern "C" int lpiInitLibrary() {
     return ERROR_LIBRARY_DISABLED;
@@ -83,12 +83,12 @@ extern "C" lpi_data_t *lpiCreateFlow() {
 extern "C" void lpiFreeFlow(lpi_data_t*) {
 }
 
-extern "C" int lpiAddPacketToFlow(lpi_data_t*, const void*, unsigned short) {
+extern "C" int lpiAddPacketToFlow(lpi_data_t*, const void*, unsigned short, int) {
     return -1;
 }
 
-extern "C" int lpiGuessProtocol(lpi_data_t*) {
-    return -1;
+extern "C" lpiResult *lpiGuessProtocol(lpi_data_t*) {
+    return nullptr;
 }
 
 extern "C" void lpiDestroyLibrary() {
