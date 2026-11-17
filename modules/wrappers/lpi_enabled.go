@@ -2,8 +2,7 @@
 
 package wrappers
 
-// #cgo CPPFLAGS: -I/usr/local/include -I/opt/homebrew/include
-// #cgo LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -lprotoident -ltrace
+// #cgo pkg-config: libprotoident libtrace
 import "C"
 
 const HasLPISupport = true
